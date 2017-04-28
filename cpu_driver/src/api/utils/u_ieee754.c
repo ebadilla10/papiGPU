@@ -3,16 +3,13 @@
 #include <inttypes.h>
 #include <errno.h>
 
-int half_prec_to_string(uint16_t  half_prec,
-                        char     *half_prec_string);
-
 int u_float_to_half_prec(float     simple_precision,
                          uint16_t *half_prec,
                          char     *half_prec_string)
 {
   // Check the max valid valid of simple precision
   if (simple_precision > MAX_HALF_PRECISION) {
-    printf ("\x1B[31m" "ERROR:" "\x1B[0m" " The simple precision value is " \
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The simple precision value is " \
             "greater than %.2f\n", MAX_HALF_PRECISION);
     return EINVAL;
   }
@@ -104,7 +101,9 @@ int u_half_prec_to_float(uint16_t  half_prec,
   return 0; // NO errors
 }
 
-int half_prec_to_string(uint16_t  half_prec,
+/* INTERNAL FUNCTIONS
+ **********************/
+static int half_prec_to_string(uint16_t  half_prec,
                         char     *half_prec_string)
 {
   memcpy(half_prec_string, (char*)(&half_prec), sizeof(uint16_t));
