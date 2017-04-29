@@ -4,19 +4,33 @@
 #include <errno.h>
 #include <string.h>
 
+// Include the implementated functions
+#include <api/driver/i_cpu_driver.h>
+
 int papiGPU_initialize(gpu_portname         portname[],
                        enum papiGPU_states *state)
 {
-  int status;
+  int status = 0;
+
+  if (NULL == state){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The state pointer is null\n");
+    #endif
+    return EINVAL;
+  }
 
   status = strcmp(portname, "");
   if (!status){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The GPU portname is empty\n");
     #endif
+    *state = GPU_ERROR;
     return EINVAL;
   }
-  return 0; //NO errors
+
+  status = i_papiGPU_initialize(portname, state);
+
+  return status; //NO errors
 }
 
 int papiGPU_create_camara(struct papiGPU_vertex  cam_vertex,

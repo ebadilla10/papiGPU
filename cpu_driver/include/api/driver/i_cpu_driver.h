@@ -1,7 +1,6 @@
 #include <stdio.h>
-#include <api/cpu_driver.h>
 
-static struct i_gpu_object_config{
+struct i_gpu_object_config{
   bool     enable;
   uint16_t SRAM_address;
   uint16_t vetex_counter;

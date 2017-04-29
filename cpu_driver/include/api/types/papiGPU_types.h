@@ -18,6 +18,7 @@ typedef float gpu_focal_point;
   typedef uint16_t gpu_obj_vertex_id;
 
 enum papiGPU_states{
+  GPU_ERROR,
   GPU_INITIALIZED,
   GPU_CAMARA_CREATED,
   GPU_OBJECT_CREATED,
