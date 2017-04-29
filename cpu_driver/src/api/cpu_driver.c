@@ -7,8 +7,14 @@
 int papiGPU_initialize(gpu_portname         portname[],
                        enum papiGPU_states *state)
 {
-  printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Function not implemented\n");
-  return EPERM;
+  int status;
+
+  status = strcmp(portname, "");
+  if (!status){
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The GPU portname is empty\n");
+    return EINVAL;
+  }
+  return 0; //NO errors
 }
 
 int papiGPU_create_camara(struct papiGPU_vertex  cam_vertex,
