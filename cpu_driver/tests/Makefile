@@ -10,10 +10,7 @@ all:
 	@echo "usage:\033[1;33m make <test_name>\033[0m [without .c]"
 
 api_tester:
-	$(CXX) $(INCLUDE) $(API_SRCS) -o $(API_TESTER)
+	$(CXX) $(INCLUDE) $(API_SRCS) $(API_TESTER).c -o $(API_TESTER)
 
 clean:
-	$(RM) $(OBJS)
-
-dist-clean: clean
-	$(RM) $(BINNAME)
+	$(RM) $(OBJS) $(API_TESTER)

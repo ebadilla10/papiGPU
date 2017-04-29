@@ -1,8 +1,8 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <api/cpu_driver.h>
-#include <api/types/papiGPU_types.h>
-#include <api/driver/i_cpu_driver.h>
 #include <errno.h>
+#include <string.h>
 
 int papiGPU_initialize(gpu_portname         portname[],
                        enum papiGPU_states *state)
@@ -11,7 +11,9 @@ int papiGPU_initialize(gpu_portname         portname[],
 
   status = strcmp(portname, "");
   if (!status){
+    #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The GPU portname is empty\n");
+    #endif
     return EINVAL;
   }
   return 0; //NO errors
@@ -37,7 +39,7 @@ int papiGPU_create_object(bool                          enable,
 }
 
 int papiGPU_insert_vertex(gpu_object_id          object_id,
-                          struct papiGPU_vertex  vertex
+                          struct papiGPU_vertex  vertex,
                           gpu_obj_vertex_id     *vertex_id,
                           enum papiGPU_states   *state)
 {

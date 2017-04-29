@@ -2,6 +2,16 @@
 #include <api/utils/u_ieee754.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <string.h>
+
+/* INTERNAL FUNCTIONS
+ **********************/
+static int half_prec_to_string(uint16_t  half_prec,
+                               char     *half_prec_string)
+{
+  memcpy(half_prec_string, (char*)(&half_prec), sizeof(uint16_t));
+  return 0; // NO errors
+}
 
 int u_float_to_half_prec(float     simple_precision,
                          uint16_t *half_prec,
@@ -98,14 +108,5 @@ int u_half_prec_to_float(uint16_t  half_prec,
   // Return the simple precision value (float)
   *simple_precision *= (half_prec >> (HALF_PRECISION_BIT - 1)) & 1? -1.0: 1.0;
 
-  return 0; // NO errors
-}
-
-/* INTERNAL FUNCTIONS
- **********************/
-static int half_prec_to_string(uint16_t  half_prec,
-                        char     *half_prec_string)
-{
-  memcpy(half_prec_string, (char*)(&half_prec), sizeof(uint16_t));
   return 0; // NO errors
 }

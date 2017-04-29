@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <api/cpu_driver.h>
-#include <api/types/papiGPU_types.h>
 
 static struct i_gpu_object_config{
   bool     enable;
@@ -23,7 +22,7 @@ int i_papiGPU_create_object(bool                          enable,
                             enum papiGPU_states          *state);
 
 int i_papiGPU_insert_vertex(gpu_object_id          object_id,
-                            struct papiGPU_vertex  vertex
+                            struct papiGPU_vertex  vertex,
                             gpu_obj_vertex_id     *vertex_id,
                             enum papiGPU_states   *state);
 
