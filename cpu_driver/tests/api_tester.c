@@ -53,7 +53,7 @@ static void test_papiGPU_initialize(){
   printf ("\x1B[36m" "---Send correct portname---\n");
   status = papiGPU_initialize(correct_portname, state);
 
-  if ((0 <= status) && (GPU_INITIALIZED == *state)){
+  if ((0 == status) && (GPU_INITIALIZED == *state)){
     printf("[\x1B[32m" "PASSED" "\x1B[0m" "] papiGPU initialization " \
            "successfully completed\n");
   } else {
