@@ -4,10 +4,8 @@
 #include <errno.h>
 #include <string.h>
 
-/* INTERNAL FUNCTIONS
- **********************/
-static int half_prec_to_string(uint16_t  half_prec,
-                               char     *half_prec_string)
+int u_half_prec_to_string(uint16_t  half_prec,
+                          char     *half_prec_string)
 {
   memcpy(half_prec_string, (char*)(&half_prec), sizeof(uint16_t));
   return 0; // NO errors
