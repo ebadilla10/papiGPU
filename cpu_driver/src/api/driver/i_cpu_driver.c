@@ -6,11 +6,7 @@
 #include <api/driver/i_cpu_driver.h>
 #include <api/utils/u_ieee754.h>
 #include <api/mem/papiGPU_memory.h>
-
-// Includes for UART comunication
-#include <unistd.h>
-#include <fcntl.h>
-#include <termios.h>
+#include <api/utils/u_uart.h>
 
 // Allowed pre-states for each state
 #define INITIALIZED_PS        1 << GPU_ERROR
@@ -28,64 +24,6 @@
 
 // Status of the UART filestream
 int stream_status;
-
-static int uart_transmitter(void *data, int bytesize){
-  int status = 0;
-
-  if (0 > stream_status){
-    #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to send data via " \
-            "UART. Filestream is not valid. Error code: %d\n", stream_status);
-    #endif
-    return stream_status;
-  }
-
-  status = write(stream_status, data, bytesize);
-  if (0 > status){
-    #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to send data via " \
-            "UART. Error code: %d\n", status);
-    #endif
-    return status;
-  }
-
-  status = 0;
-  #ifdef DEBUGLOG
-  printf ("\x1B[33m" "\tSENT data via UART" "\x1B[0m\n");
-  #endif
-  return status;
-}
-
-static int uart_receiver(void *data, int bytesize){
-  int status = 0;
-  int receiver_status;
-
-  if (0 > stream_status){
-    #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data via " \
-            "UART. Filestream is not valid. Error code: %d\n", stream_status);
-    #endif
-    return stream_status;
-  }
-
-  while (true) {
-    receiver_status = read(stream_status, data, bytesize);
-
-    if (0 > receiver_status){
-      #ifdef DEBUGLOG
-      printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data " \
-              "via UART. Error code: %d\n", receiver_status);
-      #endif
-      return receiver_status;
-    } else if (0 < receiver_status){
-      #ifdef DEBUGLOG
-      printf ("\x1B[33m" "\tRECEIVED data via UART" "\x1B[0m\n");
-      #endif
-      return status;
-    }
-  }
-
-}
 
 int i_papiGPU_initialize(gpu_portname         portname[],
                          enum papiGPU_states *state)
@@ -167,7 +105,9 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return status;
   }
 
-  status = uart_transmitter((void*) mem_valid_tag_str, sizeof(uint16_t));
+  status = u_uart_transmitter(stream_status,
+                              (void*) mem_valid_tag_str,
+                              sizeof(uint16_t));
   if (status){
     *state = GPU_ERROR;
     return status;
@@ -185,7 +125,9 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return status;
   }
 
-  status = uart_receiver((void*) mem_valid_tag_str, sizeof(uint16_t));
+  status = u_uart_receiver(stream_status,
+                           (void*) mem_valid_tag_str,
+                           sizeof(uint16_t));
   if (status){
     *state = GPU_ERROR;
     return status;

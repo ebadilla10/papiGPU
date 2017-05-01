@@ -3,7 +3,7 @@ RM=rm -rf
 INCLUDE=-I ../include
 API_TESTER=api_tester
 
-API_SRCS=../src/api/cpu_driver.c ../src/api/driver/i_cpu_driver.c ../src/api/utils/u_ieee754.c
+API_SRCS=../src/api/cpu_driver.c ../src/api/driver/i_cpu_driver.c ../src/api/utils/u_ieee754.c ../src/api/utils/u_uart.c
 OBJS=$(subst .c,.o,$(API_SRCS))
 
 all:
