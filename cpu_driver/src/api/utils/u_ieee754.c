@@ -4,10 +4,13 @@
 #include <errno.h>
 #include <string.h>
 
+#define BYTESIZE 8
+
 int u_half_prec_to_string(uint16_t  half_prec,
                           char     *half_prec_string)
 {
-  memcpy(half_prec_string, (char*)(&half_prec), sizeof(uint16_t));
+  uint16_t rotate = (half_prec << BYTESIZE) | (half_prec >> BYTESIZE);
+  memcpy(half_prec_string, (char*)(&rotate), sizeof(uint16_t));
   return 0; // NO errors
 }
 
@@ -32,7 +35,7 @@ int u_float_to_half_prec(float     simple_precision,
   // Special case
   if (0.0 == simple_precision) {
     *half_prec = 0;
-    half_prec_to_string(*half_prec, half_prec_string);
+    u_half_prec_to_string(*half_prec, half_prec_string);
     return 0;
   }
 
@@ -66,7 +69,7 @@ int u_float_to_half_prec(float     simple_precision,
   *half_prec = (sign << (HALF_PRECISION_BIT - 1)) | \
                (exp << (HALF_PRECISION_BIT - HALF_PRECISION_EXPONENT - 1)) \
                | significand;
-  half_prec_to_string(*half_prec, half_prec_string);
+  u_half_prec_to_string(*half_prec, half_prec_string);
 
   return 0; // NO errors
 }
