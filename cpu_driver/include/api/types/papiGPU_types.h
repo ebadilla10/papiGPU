@@ -17,6 +17,12 @@ typedef float gpu_focal_point;
   // gpu_obj_vertex_id is the SRAM address
   typedef uint16_t gpu_obj_vertex_id;
 
+struct i_gpu_object_config{
+    bool     enable;
+    uint16_t SRAM_address;
+    uint16_t vetex_counter;
+};
+
 enum papiGPU_states{
   GPU_ERROR,
   GPU_INITIALIZED,

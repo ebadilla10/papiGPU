@@ -1,11 +1,5 @@
 #include <stdio.h>
 
-struct i_gpu_object_config{
-  bool     enable;
-  uint16_t SRAM_address;
-  uint16_t vetex_counter;
-};
-
 int i_papiGPU_initialize(gpu_portname         portname[],
                          enum papiGPU_states *state);
 

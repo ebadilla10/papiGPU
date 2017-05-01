@@ -5,7 +5,7 @@
 #include <api/cpu_driver.h>
 #include <api/driver/i_cpu_driver.h>
 #include <api/utils/u_ieee754.h>
-#include <api/mem/memory.h>
+#include <api/mem/papiGPU_memory.h>
 
 // Includes for UART comunication
 #include <unistd.h>

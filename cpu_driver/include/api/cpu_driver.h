@@ -61,6 +61,7 @@ int papiGPU_change_transf_matrix(gpu_object_id                object_id,
 int papiGPU_refresh(enum papiGPU_states *state);
 
 /* TODO: Missing functions - For next versions
+int papiGPU_color_vertex();
 int papiGPU_remove_vertex();
 int papiGPU_remove_object();
 int papiGPU_uninitialize();
