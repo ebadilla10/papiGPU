@@ -3,9 +3,15 @@
 #include <api/cpu_driver.h>
 #include <api/utils/u_uart.h>
 
-int u_uart_transmitter(int filestream, void *data, int bytesize){
+
+/*******************
+  Send data via UART
+*******************/
+int u_uart_transmitter(int filestream, void *data, int bytesize)
+{
   int status = 0;
 
+  // Check for valid arguments
   if (0 > filestream){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to send data via " \
@@ -14,6 +20,7 @@ int u_uart_transmitter(int filestream, void *data, int bytesize){
     return filestream;
   }
 
+  // Write in UART filestream
   status = write(filestream, data, bytesize);
   if (0 > status){
     #ifdef DEBUGLOG
@@ -30,10 +37,16 @@ int u_uart_transmitter(int filestream, void *data, int bytesize){
   return status;
 }
 
-int u_uart_receiver(int filestream, void *data, int bytesize){
+
+/**************************************
+  Waiting for and receive data via UART
+**************************************/
+int u_uart_receiver(int filestream, void *data, int bytesize)
+{
   int status = 0;
   int receiver_status;
 
+  // Check for valid arguments
   if (0 > filestream){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data via " \
@@ -42,6 +55,7 @@ int u_uart_receiver(int filestream, void *data, int bytesize){
     return filestream;
   }
 
+  // Waiting for input UART data
   while (true) {
     receiver_status = read(filestream, data, bytesize);
 

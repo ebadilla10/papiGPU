@@ -7,11 +7,16 @@
 // Include the implementated functions
 #include <api/driver/i_cpu_driver.h>
 
+
+/***********************
+  Initialize the papiGPU
+***********************/
 int papiGPU_initialize(gpu_portname         portname[],
                        enum papiGPU_states *state)
 {
   int status = 0;
 
+  // Check for valid arguments
   if (NULL == state){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The state pointer is null. " \
@@ -44,12 +49,17 @@ int papiGPU_initialize(gpu_portname         portname[],
   return status;
 }
 
+
+/******************
+  Create the camara
+******************/
 int papiGPU_create_camara(struct papiGPU_vertex  cam_vertex,
                           gpu_focal_point        fp_distance,
                           enum papiGPU_states   *state)
 {
   int status = 0;
 
+  // Check for valid arguments
   if (NULL == state){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The state pointer is null. " \

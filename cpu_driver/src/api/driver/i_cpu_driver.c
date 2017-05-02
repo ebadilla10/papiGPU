@@ -8,7 +8,7 @@
 #include <api/mem/papiGPU_memory.h>
 #include <api/utils/u_uart.h>
 
-// Allowed pre-states for each state
+/* Allowed pre-states for each state */
 #define INITIALIZED_PS        1 << GPU_ERROR
 #define CAMERA_CREATE_PS      1 << GPU_INITIALIZED
 #define OBJECT_CREATE_PS      1 << GPU_CAMARA_CREATED
@@ -22,9 +22,13 @@
 
 #define UART_SENT
 
-// Status of the UART filestream
+/* Status of the UART filestream */
 int stream_status;
 
+
+/***********************
+  Initialize the papiGPU
+***********************/
 int i_papiGPU_initialize(gpu_portname         portname[],
                          enum papiGPU_states *state)
 {
@@ -37,6 +41,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   mem_valid_tag_str = (char *) malloc(sizeof(uint16_t));
   str_to_compare = (char *) malloc(sizeof(uint16_t));
 
+  // Check if pre-states is allowed
   if (!((1 << *state) & INITIALIZED_PS)){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to initialize the " \
@@ -47,6 +52,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return EPERM;
   }
 
+  // Open UART filestream
   stream_status = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
 
   if (0 > stream_status){
@@ -59,6 +65,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return stream_status;
   }
 
+  // Set the UART configuration and options
   status = tcgetattr(stream_status, &uart_options);
   if (status){
     #ifdef DEBUGLOG
@@ -94,6 +101,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return status;
   }
 
+  // Request the papiGPU initialization
   mem_valid_tag = REQUEST_VALID_TAG;
   status = u_half_prec_to_string(mem_valid_tag, mem_valid_tag_str);
   if (status){
@@ -113,6 +121,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return status;
   }
 
+  // Waiting for papiGPU initialization approval
   #ifdef UART_SENT
   mem_valid_tag = APPROVAL_VALID_TAG;
   status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
@@ -147,6 +156,10 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   return status;
 }
 
+
+/******************
+  Create the camara
+******************/
 int i_papiGPU_create_camara(struct papiGPU_vertex  cam_vertex,
                             gpu_focal_point        fp_distance,
                             enum papiGPU_states   *state)
