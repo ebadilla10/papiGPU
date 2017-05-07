@@ -7,9 +7,9 @@
 #define BYTESIZE 8
 
 
-/*********************************
-  Convert half precision to string
-*********************************/
+/**
+ * Convert half precision to string
+ */
 int u_half_prec_to_string(uint16_t  half_prec,
                           char     *half_prec_string)
 {
@@ -19,9 +19,9 @@ int u_half_prec_to_string(uint16_t  half_prec,
 }
 
 
-/*********************************************************
-  Convert simple precision to half precision and to string
-*********************************************************/
+/**
+ * Convert simple precision to half precision and to string
+ */
 int u_float_to_half_prec(float     simple_precision,
                          uint16_t *half_prec,
                          char     *half_prec_string)
@@ -83,9 +83,9 @@ int u_float_to_half_prec(float     simple_precision,
 }
 
 
-/**********************************************
-  Convert to half precision to simple precision
-**********************************************/
+/**
+ * Convert to half precision to simple precision
+ */
 int u_half_prec_to_float(uint16_t  half_prec,
                          float    *simple_precision)
 {

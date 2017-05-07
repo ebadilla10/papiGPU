@@ -8,10 +8,10 @@
 #include <api/mem/papiGPU_memory.h>
 #include <api/utils/u_uart.h>
 
-/* Allowed pre-states for each state */
+/** Allowed pre-states for each state */
 #define INITIALIZED_PS        1 << GPU_ERROR
 #define CAMERA_CREATE_PS      1 << GPU_INITIALIZED
-#define OBJECT_CREATE_PS      1 << GPU_CAMARA_CREATED
+#define OBJECT_CREATE_PS      1 << GPU_CAMERA_CREATED
 #define VERTEX_INSERT_PS      1 << GPU_OBJECT_CREATED  | \
                               1 << GPU_VERTEX_INSERTED
 #define OBJECT_CLOSE_PS       1 << GPU_VERTEX_INSERTED
@@ -22,13 +22,13 @@
 
 #define UART_SENT
 
-/* Status of the UART filestream */
+/** Status of the UART filestream */
 int stream_status;
 
 
-/***********************
-  Initialize the papiGPU
-***********************/
+/**
+ * Initialize the papiGPU
+ */
 int i_papiGPU_initialize(gpu_portname         portname[],
                          enum papiGPU_states *state)
 {
@@ -157,10 +157,10 @@ int i_papiGPU_initialize(gpu_portname         portname[],
 }
 
 
-/******************
-  Create the camara
-******************/
-int i_papiGPU_create_camara(struct papiGPU_vertex  cam_vertex,
+/**
+ * Create the camera
+ */
+int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
                             gpu_focal_point        fp_distance,
                             enum papiGPU_states   *state)
 {

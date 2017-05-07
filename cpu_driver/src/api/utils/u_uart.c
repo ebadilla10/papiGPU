@@ -4,9 +4,9 @@
 #include <api/utils/u_uart.h>
 
 
-/*******************
-  Send data via UART
-*******************/
+/**
+ * Send data via UART
+ */
 int u_uart_transmitter(int filestream, void *data, int bytesize)
 {
   int status = 0;
@@ -38,9 +38,9 @@ int u_uart_transmitter(int filestream, void *data, int bytesize)
 }
 
 
-/**************************************
-  Waiting for and receive data via UART
-**************************************/
+/**
+ * Waiting for and receive data via UART
+ */
 int u_uart_receiver(int filestream, void *data, int bytesize)
 {
   int status = 0;

@@ -28,7 +28,7 @@ static void test_papiGPU_initialize(){
   printf ("\x1B[36m" "---Send an incorrect portname---\n");
   status = papiGPU_initialize(incorrect_portname, state);
 
-  if (status == ENODEV && (GPU_ERROR == *state)){
+  if (status == -EPERM && (GPU_ERROR == *state)){
     printf("[\x1B[32m" "PASSED" "\x1B[0m" "] papiGPU initialization failed " \
            "due to incorrect portname \n");
   } else {
