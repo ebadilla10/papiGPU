@@ -20,7 +20,15 @@
                               1 << GPU_OBJECT_CLOSED
 #define REFRESH_PS            1 << GPU_OBJECT_CLOSED
 
-#define UART_SENT
+#define NO_OBJECTS 0x0000
+
+/** Memory block description */
+#define INITIAL_BLOCK_BYTE_SIZE (SRAM_ADDRESS_BYTE_SIZE + \
+                                 SRAM_ENTRY_BYTE_SIZE)  * \
+                                 INITIAL_BLOCK_SIZE
+
+#define ADDR_ENTRY_BYTE_SIZE    SRAM_ADDRESS_BYTE_SIZE + \
+                                SRAM_ENTRY_BYTE_SIZE
 
 /** Status of the UART filestream */
 int stream_status;
@@ -34,11 +42,18 @@ int i_papiGPU_initialize(gpu_portname         portname[],
 {
   int status = 0;
   struct termios uart_options = {0};
-  uint16_t mem_valid_tag;
-  unsigned char *mem_valid_tag_str;
+  uint16_t mem_valid_tag = 0;
+  unsigned char *str_converted;
+  unsigned char *str_to_send;
+  unsigned char *str_to_receive;
   unsigned char *str_to_compare;
+  uint16_t SRAM_address = 0;
+  uint16_t SRAM_entry = 0;
+  uint16_t block_element = 0;
 
-  mem_valid_tag_str = (char *) malloc(sizeof(uint16_t));
+  str_converted = (char *) malloc(sizeof(uint16_t));
+  str_to_send = (char *) malloc(sizeof(uint16_t));
+  str_to_receive = (char *) malloc(sizeof(uint16_t));
   str_to_compare = (char *) malloc(sizeof(uint16_t));
 
   // Check if pre-states is allowed
@@ -103,26 +118,29 @@ int i_papiGPU_initialize(gpu_portname         portname[],
 
   // Request the papiGPU initialization
   mem_valid_tag = REQUEST_VALID_TAG;
-  status = u_half_prec_to_string(mem_valid_tag, mem_valid_tag_str);
+  status = u_half_prec_to_string(mem_valid_tag, str_to_send);
   if (status){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "request valid tag to string. Error code: %d\n", status);
+            "request valid tag to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
   }
 
   status = u_uart_transmitter(stream_status,
-                              (void*) mem_valid_tag_str,
-                              sizeof(uint16_t));
+                              (void*) str_to_send,
+                              SRAM_TAG_BYTE_SIZE);
   if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to transmit data " \
+            "using UART. Error code: %d\n", status);
+    #endif
     *state = GPU_ERROR;
     return status;
   }
 
   // Waiting for papiGPU initialization approval
-  #ifdef UART_SENT
   mem_valid_tag = APPROVAL_VALID_TAG;
   status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
   if (status){
@@ -135,14 +153,18 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   }
 
   status = u_uart_receiver(stream_status,
-                           (void*) mem_valid_tag_str,
-                           sizeof(uint16_t));
+                           (void*) str_to_receive,
+                           SRAM_TAG_BYTE_SIZE);
   if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data " \
+            "using UART. Error code: %d\n", status);
+    #endif
     *state = GPU_ERROR;
     return status;
   }
 
-  status = memcmp(str_to_compare, mem_valid_tag_str, sizeof(uint16_t));
+  status = memcmp(str_to_compare, str_to_receive, SRAM_TAG_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
     printf ("\x1B[31m" "ERROR: " "\x1B[0m" "UART approval tag is not " \
@@ -151,7 +173,117 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return EIO;
   }
-  #endif // UART_SENT
+
+  // Format the SRAM of the papiGPU
+  str_to_send = (char *) malloc(INITIAL_BLOCK_BYTE_SIZE);
+
+  // Set initial address and valid tag for the papiGPU
+  SRAM_address = INITIAL_ADDRESS;
+  status = u_half_prec_to_string(SRAM_address, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
+    "initial papiGPU address to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[block_element * ADDR_ENTRY_BYTE_SIZE],
+          str_converted,
+          sizeof(uint16_t));
+
+  SRAM_entry = GPU_VALID_TAG;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
+    "papiGPU valid tag to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[(block_element * ADDR_ENTRY_BYTE_SIZE) + \
+          SRAM_ADDRESS_BYTE_SIZE],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Set the number of objects in cero
+  block_element++;
+  SRAM_address = NUMB_OBJS_ADDRESS;
+  status = u_half_prec_to_string(SRAM_address, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
+    "SRAM address to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[block_element * ADDR_ENTRY_BYTE_SIZE],
+          str_converted,
+          sizeof(uint16_t));
+
+  SRAM_entry = NO_OBJECTS;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
+    "number of objects to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[(block_element * ADDR_ENTRY_BYTE_SIZE) + \
+          SRAM_ADDRESS_BYTE_SIZE],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Sending initial block to SRAM
+  status = u_uart_transmitter(stream_status,
+                              (void*) str_to_send,
+                              INITIAL_BLOCK_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to transmit data " \
+            "using UART. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  // Waiting for papiGPU success answer
+  mem_valid_tag = (uint16_t)(~GPU_VALID_TAG);
+  status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
+    "approval valid tag to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_receiver(stream_status,
+                           (void*) str_to_receive,
+                           SRAM_TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data " \
+            "using UART. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = memcmp(str_to_compare, str_to_receive, SRAM_TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to format the SRAM of "\
+            "the papiGPU. Error code: %d\n", EIO);
+    #endif
+    *state = GPU_ERROR;
+    return EIO;
+  }
 
   return status;
 }

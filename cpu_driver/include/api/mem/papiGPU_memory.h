@@ -4,8 +4,25 @@
  * Constant values of SRAM store format and communication tags
  */
 
+#ifndef SRAM_ADDRESS_BYTE_SIZE
+ #define SRAM_ADDRESS_BYTE_SIZE 2
+ /**  */
+#endif
+#ifndef SRAM_ENTRY_BYTE_SIZE
+ #define SRAM_ENTRY_BYTE_SIZE   2
+ /**  */
+#endif
+#ifndef SRAM_TAG_BYTE_SIZE
+ #define SRAM_TAG_BYTE_SIZE     2
+ /**  */
+#endif
+
 #ifndef INITIAL_ADDRESS
   #define INITIAL_ADDRESS    0x0000
+  /**  */
+#endif
+#ifndef NUMB_OBJS_ADDRESS
+  #define NUMB_OBJS_ADDRESS  INITIAL_ADDRESS + 1
   /**  */
 #endif
 #ifndef INITIAL_BLOCK_SIZE
