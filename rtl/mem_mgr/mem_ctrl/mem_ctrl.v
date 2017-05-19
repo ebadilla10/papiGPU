@@ -40,6 +40,7 @@ module mem_ctrl(
   input wire [7:0] iRxByte,
   input wire       iRxReady,
   input wire       iRxError,
+  input wire       iTxSent,
   // Output to UART
   output reg [7:0] oTxByte,
   output reg       oTxReady
@@ -49,6 +50,8 @@ module mem_ctrl(
   parameter GLB_STATE_SIZE       = 3;
   parameter UART_SEND_STATE_SIZE = 1;
   parameter SUB_STATE_SIZE       = 2;
+  parameter VIA_UART_STATE_SIZE  = 2;
+
 
   // Global Memory Control States
   parameter GLB_WAIT_UART   = 3'b000;
@@ -91,6 +94,13 @@ module mem_ctrl(
   parameter FINAL_BLOCK_VALID_TAG = 16'hFFFF;
   parameter ERROR_TAG             = 16'h1414;
 
+  // UART Receiver States
+  parameter UART_FIRST_BYTE = 1'b0;
+  parameter UART_SECOND_BYTE = 1'b1;
+
+  // UART Receiver States
+  parameter UART_FIRST_BYTE_S = 1'b0;
+  parameter UART_SECOND_BYTE_S = 1'b1;
 
   // State registers
   reg [GLB_STATE_SIZE-1:0]       rGlbState      = GLB_WAIT_UART;
@@ -108,17 +118,70 @@ module mem_ctrl(
   reg        rOffsetVertex   = 1'b0;
   reg        rTMatrixExcep   = 1'b0;
 
-  assign ioData = (!oWrite) ? 8'bz : rData;
+  assign ioData = (!oWrite) ? 16'bz : rData;
 
+  // Collect data via UART registers
+  reg        iRx16BitsReady;
+  reg [15:0] iRx16Bits;
+
+  reg        iTx16BitsReady;
+  reg [15:0] iTx16Bits;
+
+  reg [VIA_UART_STATE_SIZE-1:0] uart_receive_state = UART_FIRST_BYTE;
+  reg [VIA_UART_STATE_SIZE-1:0] uart_transmit_state = UART_FIRST_BYTE;
+
+  ///////////////////////////////////////////////////////////////
+  // uart_receiver: Collects data sent via UART in 16-bits blocks
+  always @ (posedge iRxReady) begin
+
+    case (uart_receive_state)
+
+      UART_FIRST_BYTE: begin
+        iRx16Bits [15:8] <= iRxByte;
+        iRx16BitsReady <= 1'b0;
+        uart_receive_state <= UART_SECOND_BYTE;
+      end // case UART_FIRST_BYTE
+
+      UART_SECOND_BYTE: begin
+        iRx16Bits [7:0] <= iRxByte;
+        iRx16BitsReady <= 1'b1;
+        uart_receive_state <= UART_FIRST_BYTE;
+      end // case UART_SECOND_BYTE_R
+    endcase
+
+  end // block uart_receiver
+
+  ////////////////////////////////////////////////////////////////////
+  // uart_transmitter: Collect 16-bits data blocks to be sent via UART
+  always @ (posedge iTx16BitsReady) begin
+
+    if (uart_transmit_state == UART_FIRST_BYTE) begin
+      oTxByte <= iTx16Bits[15:8];
+      oTxReady <= 1'b1;
+      uart_transmit_state <= UART_SECOND_BYTE;
+    end else begin
+    end
+
+  end // block uart_transmitter
+
+  always @ (posedge iTxSent) begin
+
+    if (uart_transmit_state == UART_SECOND_BYTE) begin
+      oTxByte <= iTx16Bits[7:0];
+      oTxReady <= 1'b1;
+      uart_transmit_state <= UART_FIRST_BYTE;
+    end
+
+  end
 
   /////////////////////////////////////////////////////////////////
   // rx_change: If data is received via UART this manage the Memory
   //            Control States
-  always @ (posedge iRxReady) begin
+  always @ (posedge iRx16BitsReady) begin
     case(rGlbState)
 
       GLB_WAIT_UART: begin
-        case(iRxByte)
+        case(iRx16Bits)
 
           REQUEST_VALID_TAG: begin
             rGlbState <= GLB_SET_INIT;
@@ -176,7 +239,7 @@ module mem_ctrl(
 
       GLB_SET_OBJ_VTX: begin
         if (rOffsetVertex) begin
-          rOffsetAddr <= iRxByte;
+          rOffsetAddr <= iRx16Bits;
           rOffsetVertex <= 1'b0;
         end else begin
           rSubStateChg <= 1'b1;
@@ -201,16 +264,16 @@ module mem_ctrl(
     case(rSubState)
 
       SUB_RESPONSE_TO_APPROVAL: begin
-        oTxByte <= ~(iRxByte);
-        rRespFinalState <= iRxByte;
-        oTxReady <= 1'b1;
+        iTx16Bits <= ~(iRx16Bits);
+        rRespFinalState <= iRx16Bits;
+        iTx16BitsReady <= 1'b1;
         rSubState <= SUB_SET_ADDRESS;
         rSubStateChg <= 1'b0;
       end // case SUB_RESPONSE_TO_APPROVAL
 
       SUB_SET_ADDRESS: begin
-        rActualAddr <= iRxByte;
-        rStopAddr <= iRxByte + rOffsetAddr;
+        rActualAddr <= iRx16Bits;
+        rStopAddr <= iRx16Bits + rOffsetAddr;
         rSubState <= SUB_WRITING_IN_SRAM;
         rSubStateChg <= 1'b0;
       end // case SUB_SET_ADDRESS
@@ -229,11 +292,11 @@ module mem_ctrl(
             rTMatrixExcep <= 1'b0;
           end
 
-          oTxByte <= rRespFinalState;
-          oTxReady <= 1'b1;
+          iTx16Bits <= rRespFinalState;
+          iTx16BitsReady <= 1'b1;
           rSubStateChg <= 1'b0;
         end else begin
-          rData <= iRxByte;
+          rData <= iRx16Bits;
           oAddress <= rActualAddr;
           oWrite <= 1'b1;
           oValidRequest <= 1'b1;
