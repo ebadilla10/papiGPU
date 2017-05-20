@@ -102,6 +102,25 @@ module mem_ctrl(
   parameter UART_FIRST_BYTE_S = 1'b0;
   parameter UART_SECOND_BYTE_S = 1'b1;
 
+  // Refresh States
+  parameter REFRESH_CAM_VER_X = 5'b00000;
+  parameter REFRESH_CAM_VER_Y = 5'b00001;
+  parameter REFRESH_CAM_VER_Z = 5'b00010;
+  parameter REFRESH_CAM_DC    = 5'b00011;
+  parameter REFRESH_COS_ROLL  = 5'b00100;
+  parameter REFRESH_COS_PITCH = 5'b00101;
+  parameter REFRESH_COS_YAW   = 5'b00110;
+  parameter REFRESH_SEN_ROLL  = 5'b00111;
+  parameter REFRESH_SEN_PITCH = 5'b01000;
+  parameter REFRESH_SEN_YAW   = 5'b01001;
+  parameter REFRESH_SCALE_X   = 5'b01010;
+  parameter REFRESH_SCALE_Y   = 5'b01011;
+  parameter REFRESH_SCALE_Z   = 5'b01100;
+  parameter REFRESH_TRANSL_X  = 5'b01101;
+  parameter REFRESH_TRANSL_Y  = 5'b01110;
+  parameter REFRESH_TRANSL_Z  = 5'b01111;
+  parameter REFRESH_VERTEX    = 5'b10000;
+
   // State registers
   reg [GLB_STATE_SIZE-1:0]       rGlbState      = GLB_WAIT_UART;
   reg [UART_SEND_STATE_SIZE-1:0] rUartSendState = UART_TO_SEND;
@@ -129,6 +148,9 @@ module mem_ctrl(
 
   reg [VIA_UART_STATE_SIZE-1:0] uart_receive_state = UART_FIRST_BYTE;
   reg [VIA_UART_STATE_SIZE-1:0] uart_transmit_state = UART_FIRST_BYTE;
+
+  // Refresh state registers
+  reg rBusyGPU = 1'b0;
 
   ///////////////////////////////////////////////////////////////
   // uart_receiver: Collects data sent via UART in 16-bits blocks
@@ -251,6 +273,7 @@ module mem_ctrl(
       end // case GLB_CHG_TMATRIX
 
       GLB_REFRESH: begin
+        rBusyGPU <= 1'b1;
       end // case GLB_REFRESH
 
     endcase // rGlbState
@@ -311,6 +334,14 @@ module mem_ctrl(
     endcase // rSubState
 
   end // block sub_states_manager
+
+  ////////////////////////////////////////////////////////////////////
+  // busy_gpu: Return the inverse of Refresh Tag to CPU if GPU is busy
+  always @ (posedge rBusyGPU) begin
+    iTx16Bits <= ~(REFRESH_VALID_TAG);
+    iTx16BitsReady <= 1'b1;
+    rBusyGPU <= 0'b0;
+  end // block busy_gpu
 
   /////////////////////////////////////////////////////////////////////////
   // uart_send_state: When UART is sending data this keep the Tx Ready HIGH
