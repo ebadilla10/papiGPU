@@ -51,7 +51,7 @@ module mem_ctrl(
   parameter UART_SEND_STATE_SIZE = 1;
   parameter SUB_STATE_SIZE       = 2;
   parameter VIA_UART_STATE_SIZE  = 2;
-
+  parameter REFRESH_STATE_SIZE   = 5;
 
   // Global Memory Control States
   parameter GLB_WAIT_UART   = 3'b000;
@@ -126,6 +126,7 @@ module mem_ctrl(
   reg [UART_SEND_STATE_SIZE-1:0] rUartSendState = UART_TO_SEND;
   reg [SUB_STATE_SIZE-1:0]       rSubState      = SUB_RESPONSE_TO_APPROVAL;
   reg                            rSubStateChg   = 1'b0;
+  reg [REFRESH_STATE_SIZE-1:0]   rRefreshState  = REFRESH_CAM_VER_X;
 
   // SRAM registers
   reg [15:0] rActualAddr = 16'h0000;

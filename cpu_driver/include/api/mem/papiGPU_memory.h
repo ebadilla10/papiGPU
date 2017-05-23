@@ -113,3 +113,8 @@
   #define ERROR_TAG 0x1414
   /** */
 #endif
+
+#ifdef BUSY_TAG
+  #define BUSY_TAG 0x4141
+  /** */
+#endif
