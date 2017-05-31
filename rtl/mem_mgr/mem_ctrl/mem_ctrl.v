@@ -8,6 +8,7 @@ module mem_ctrl(
   // Outputs to Graphics Pipeline
   output reg        oEnable,
   output wire       oInitObj,
+  output wire       oInitVtx,
   output reg [15:0] oCamVerX,
   output reg [15:0] oCamVerY,
   output reg [15:0] oCamVerZ,
@@ -52,6 +53,8 @@ module mem_ctrl(
   parameter SUB_STATE_SIZE       = 2;
   parameter VIA_UART_STATE_SIZE  = 2;
   parameter REFRESH_STATE_SIZE   = 5;
+  parameter RFRSH_INIT_GPU_SUBSTATE_SIZE = 1;
+  parameter RFRSH_OBJ_SUBSTATE_SIZE = 1;
 
   // Global Memory Control States
   parameter GLB_WAIT_UART   = 3'b000;
@@ -93,6 +96,8 @@ module mem_ctrl(
   parameter REFRESH_VALID_TAG     = 16'h1234;
   parameter FINAL_BLOCK_VALID_TAG = 16'hFFFF;
   parameter ERROR_TAG             = 16'h1414;
+  parameter BUSY_TAG              = 16'h4141;
+
 
   // UART Receiver States
   parameter UART_FIRST_BYTE = 1'b0;
@@ -119,14 +124,31 @@ module mem_ctrl(
   parameter REFRESH_TRANSL_X  = 5'b01101;
   parameter REFRESH_TRANSL_Y  = 5'b01110;
   parameter REFRESH_TRANSL_Z  = 5'b01111;
-  parameter REFRESH_VERTEX    = 5'b10000;
+  parameter REFRESH_VERTEX_X  = 5'b10000;
+  parameter REFRESH_VERTEX_Y  = 5'b10001;
+  parameter REFRESH_VERTEX_Z  = 5'b10010;
+
+  parameter REFRESH_INIT_GPU  = 5'b10011;
+  parameter REFRESH_INIT_CAM  = 5'b10100;
+  parameter REFRESH_INIT_OBJ  = 5'b10101;
+  parameter REFRESH_INIT_VTX  = 5'b10110;
+
+  // Refresh Init GPU Substates
+  parameter RFRSH_INT_GPU_VALID_TAG = 1'b0;
+  parameter RFRSH_INT_GPU_NUM_OBJ   = 1'b1;
+
+  // Refresh Object Substates
+  parameter RFRSH_OBJ_VALID_TAG = 1'b0;
+  parameter RFRSH_OBJ_NEXT_ADDR = 1'b1;
 
   // State registers
   reg [GLB_STATE_SIZE-1:0]       rGlbState      = GLB_WAIT_UART;
   reg [UART_SEND_STATE_SIZE-1:0] rUartSendState = UART_TO_SEND;
   reg [SUB_STATE_SIZE-1:0]       rSubState      = SUB_RESPONSE_TO_APPROVAL;
   reg                            rSubStateChg   = 1'b0;
-  reg [REFRESH_STATE_SIZE-1:0]   rRefreshState  = REFRESH_CAM_VER_X;
+  reg [REFRESH_STATE_SIZE-1:0]   rRefreshState  = REFRESH_INIT_GPU;
+  reg [RFRSH_INIT_GPU_SUBSTATE_SIZE-1:0] rRfrshInitGpuSubState = RFRSH_INT_GPU_VALID_TAG;
+  reg [RFRSH_OBJ_SUBSTATE_SIZE-1:0] rRfrshObjSubState = RFRSH_OBJ_VALID_TAG;
 
   // SRAM registers
   reg [15:0] rActualAddr = 16'h0000;
@@ -151,7 +173,15 @@ module mem_ctrl(
   reg [VIA_UART_STATE_SIZE-1:0] uart_transmit_state = UART_FIRST_BYTE;
 
   // Refresh state registers
+  reg rInitRefresh = 1'b0;
   reg rBusyGPU = 1'b0;
+
+  // Register
+  reg [15:0] rNumObjts = 16'h0000;
+  reg [15:0] rContNumObjts = 16'h0000;
+  reg        rInvalidObj     = 1'b0;
+
+  reg [15:0] rNextObjAddr = 16'h0000;
 
   ///////////////////////////////////////////////////////////////
   // uart_receiver: Collects data sent via UART in 16-bits blocks
@@ -245,7 +275,8 @@ module mem_ctrl(
 
           REFRESH_VALID_TAG: begin
             rGlbState <= GLB_REFRESH;
-            // TODO: Implementation
+            rSubStateChg <= 1'b1;
+            rInitRefresh <= 1'b1;
           end
           default: rGlbState <= GLB_WAIT_UART;
 
@@ -280,7 +311,6 @@ module mem_ctrl(
     endcase // rGlbState
 
   end // block rx_change
-
 
   //////////////////////
   // sub_states_manager:
@@ -336,10 +366,165 @@ module mem_ctrl(
 
   end // block sub_states_manager
 
-  ////////////////////////////////////////////////////////////////////
-  // busy_gpu: Return the inverse of Refresh Tag to CPU if GPU is busy
+  //////////////////////
+  // refresh_controller:
+  always @ ( posedge rInitRefresh) begin
+
+    oAddress <= INITIAL_ADDRESS;
+    oWrite <= 1'b0;
+    oValidRequest <= 1'b1;
+
+  end // block refresh_controller
+
+  always @ ( posedge iValidRead ) begin
+
+    if (rInitRefresh) begin
+
+      case(rRefreshState)
+
+        REFRESH_INIT_GPU: begin
+
+          case (rRfrshInitGpuSubState)
+            RFRSH_INT_GPU_VALID_TAG: begin
+              case (ioData)
+                GPU_VALID_TAG: begin
+                  rRfrshInitGpuSubState <= RFRSH_INT_GPU_NUM_OBJ;
+                  oAddress <= oAddress + 1;
+                  oWrite <= 1'b0;
+                  oValidRequest <= 1'b1;
+                end // case GPU_VALID_TAG
+
+                ~GPU_VALID_TAG: begin
+                end // case ~GPU_VALID_TAG
+
+                default: begin
+                end // case default
+
+              endcase // ioData
+            end // case RFRSH_INT_GPU_VALID_TAG
+
+            RFRSH_INT_GPU_NUM_OBJ: begin
+              rNumObjts <= ioData;
+              oAddress <= oAddress + 1;
+              oWrite <= 1'b0;
+              oValidRequest <= 1'b1;
+              rRfrshInitGpuSubState <= RFRSH_INT_GPU_VALID_TAG;
+              rRefreshState <= REFRESH_INIT_CAM;
+            end // case RFRSH_INT_GPU_NUM_OBJ
+
+            default: begin
+            end // case default
+
+          endcase // rRfrshInitGpuSubState
+
+        end // case REFRESH_INIT_GPU
+
+        REFRESH_INIT_CAM: begin
+          if (ioData == CAM_VALID_TAG) begin
+            oAddress <= oAddress + 1;
+            oWrite <= 1'b0;
+            oValidRequest <= 1'b1;
+            rRefreshState <= REFRESH_CAM_VER_X;
+          end else begin
+
+          end
+        end // case REFRESH_INIT_CAM
+
+        REFRESH_CAM_VER_X: begin
+          oCamVerX <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_CAM_VER_Y;
+        end // case REFRESH_CAM_VER_X
+
+        REFRESH_CAM_VER_Y: begin
+          oCamVerY <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_CAM_VER_Z;
+        end // case REFRESH_CAM_VER_Y
+
+        REFRESH_CAM_VER_Z: begin
+          oCamVerZ <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_CAM_DC;
+        end // case REFRESH_CAM_VER_Z
+
+        REFRESH_CAM_DC: begin
+          oCamDc <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_INIT_OBJ;
+        end // case REFRESH_CAM_DC
+
+        REFRESH_INIT_OBJ: begin
+          case (rRfrshObjSubState)
+            RFRSH_OBJ_VALID_TAG: begin
+              case (ioData)
+                OBJ_VALID_TAG: begin
+                  oAddress <= oAddress + 1;
+                  oWrite <= 1'b0;
+                  oValidRequest <= 1'b1;
+                  rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
+                end // case OBJ_VALID_TAG
+
+                ~OBJ_VALID_TAG: begin
+                  rInvalidObj = 1'b1;
+                  oAddress <= oAddress + 1;
+                  oWrite <= 1'b0;
+                  oValidRequest <= 1'b1;
+                  rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
+                end // case ~OBJ_VALID_TAG
+              endcase // ioData
+            end // case RFRSH_OBJ_VALID_TAG
+
+            RFRSH_OBJ_NEXT_ADDR: begin
+              if (rInvalidObj) begin
+                oAddress <= ioData;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRfrshObjSubState <= RFRSH_OBJ_VALID_TAG;
+                rInvalidObj = 1'b0;
+              end else begin
+                rNextObjAddr <= ioData;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRfrshObjSubState <= RFRSH_OBJ_VALID_TAG;
+                rRefreshState <= REFRESH_COS_ROLL;
+              end
+            end // case RFRSH_OBJ_NEXT_ADDR
+
+            default: begin
+            end // case default
+
+          endcase // rRfrshObjSubState
+        end // case REFRESH_INIT_OBJ
+
+        REFRESH_COS_ROLL: begin
+          oCosRoll <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_COS_PITCH;
+
+        end // case REFRESH_COS_ROLL
+
+      endcase // rRefreshState
+
+    end // if rInitRefresh
+
+  end
+
+  //////////////////////////////////////////////////////
+  // busy_gpu: Return the Busy Tag to CPU if GPU is busy
   always @ (posedge rBusyGPU) begin
-    iTx16Bits <= ~(REFRESH_VALID_TAG);
+    iTx16Bits <= BUSY_TAG;
     iTx16BitsReady <= 1'b1;
     rBusyGPU <= 0'b0;
   end // block busy_gpu
