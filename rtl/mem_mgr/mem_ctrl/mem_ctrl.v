@@ -7,8 +7,8 @@ module mem_ctrl(
 
   // Outputs to Graphics Pipeline
   output reg        oEnable,
-  output wire       oInitObj,
-  output wire       oInitVtx,
+  output reg        oInitObj,
+  output reg        oInitVtx,
   output reg [15:0] oCamVerX,
   output reg [15:0] oCamVerY,
   output reg [15:0] oCamVerZ,
@@ -182,6 +182,11 @@ module mem_ctrl(
   reg        rInvalidObj     = 1'b0;
 
   reg [15:0] rNextObjAddr = 16'h0000;
+  wire [15:0] wLastObjAddr;
+
+  reg r_first_vtx = 1'b0;
+
+  assign wLastObjAddr = rNextObjAddr - 1;
 
   ///////////////////////////////////////////////////////////////
   // uart_receiver: Collects data sent via UART in 16-bits blocks
@@ -480,6 +485,15 @@ module mem_ctrl(
                   oValidRequest <= 1'b1;
                   rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
                 end // case ~OBJ_VALID_TAG
+
+                FINAL_BLOCK_VALID_TAG: begin
+                  rInitRefresh <= 1'b0;
+                  rGlbState <= GLB_WAIT_UART;
+                  rSubState <= SUB_RESPONSE_TO_APPROVAL;
+                  iTx16Bits <= GLB_REFRESH;
+                  iTx16BitsReady <= 1'b1;
+                end // case FINAL_BLOCK_VALID_TAG
+
               endcase // ioData
             end // case RFRSH_OBJ_VALID_TAG
 
@@ -504,6 +518,9 @@ module mem_ctrl(
             end // case default
 
           endcase // rRfrshObjSubState
+
+          r_first_vtx <= 1'b1;
+
         end // case REFRESH_INIT_OBJ
 
         REFRESH_COS_ROLL: begin
@@ -514,6 +531,139 @@ module mem_ctrl(
           rRefreshState <= REFRESH_COS_PITCH;
 
         end // case REFRESH_COS_ROLL
+
+        REFRESH_COS_PITCH: begin
+          oCosPitch <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_COS_YAW;
+        end // case REFRESH_COS_PITCH
+
+        REFRESH_COS_YAW: begin
+          oCosYaw <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_SEN_ROLL;
+        end // case REFRESH_COS_YAW
+
+        REFRESH_SEN_ROLL: begin
+          oSenRoll <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_SEN_PITCH;
+        end // case REFRESH_SEN_ROLL
+
+        REFRESH_SEN_PITCH: begin
+          oSenPitch <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_SEN_YAW;
+        end // case REFRESH_SEN_PITCH
+
+        REFRESH_SEN_YAW: begin
+          oSenYaw <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_SCALE_X;
+        end // case REFRESH_SEN_YAW
+
+        REFRESH_SCALE_X: begin
+          oScaleX <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_SCALE_Y;
+        end // case REFRESH_SCALE_X
+
+        REFRESH_SCALE_Y: begin
+          oScaleY <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_SCALE_Z;
+        end // case REFRESH_SCALE_Y
+
+        REFRESH_SCALE_Z: begin
+          oScaleZ <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_TRANSL_X;
+        end // case REFRESH_SCALE_Z
+
+        REFRESH_TRANSL_X: begin
+          oTranslX <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_TRANSL_Y;
+        end // case REFRESH_TRANSL_X
+
+        REFRESH_TRANSL_Y: begin
+          oTranslY <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_TRANSL_Z;
+        end // case REFRESH_TRANSL_Y
+
+        REFRESH_TRANSL_Z: begin
+          oTranslZ <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_INIT_VTX;
+        end // case REFRESH_TRANSL_Z
+
+        REFRESH_INIT_VTX: begin
+          if (ioData == VRTX_VALID_TAG) begin
+            oAddress <= oAddress + 1;
+            oWrite <= 1'b0;
+            oValidRequest <= 1'b1;
+            rRefreshState <= REFRESH_VERTEX_X;
+          end else begin
+          end
+        end // case REFRESH_INIT_VTX
+
+        REFRESH_VERTEX_X: begin
+          oVertexX <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_VERTEX_Y;
+        end // case REFRESH_VERTEX_X
+
+        REFRESH_VERTEX_Y: begin
+          oVertexY <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          rRefreshState <= REFRESH_VERTEX_Z;
+        end // case REFRESH_VERTEX_Y
+
+        REFRESH_VERTEX_Z: begin
+          if (oAddress == wLastObjAddr) begin
+            rRefreshState <= REFRESH_VERTEX_X;
+          end else begin
+            rRefreshState <= REFRESH_INIT_OBJ;
+          end
+
+          if (r_first_vtx == 1'b1) begin
+            oInitObj <= 1'b1;
+            r_first_vtx <= 1'b0;
+          end
+
+          oVertexZ <= ioData;
+          oAddress <= oAddress + 1;
+          oWrite <= 1'b0;
+          oValidRequest <= 1'b1;
+          oInitVtx <= 1'b1;
+        end // case REFRESH_VERTEX_Z
 
       endcase // rRefreshState
 
@@ -526,7 +676,7 @@ module mem_ctrl(
   always @ (posedge rBusyGPU) begin
     iTx16Bits <= BUSY_TAG;
     iTx16BitsReady <= 1'b1;
-    rBusyGPU <= 0'b0;
+    rBusyGPU <= 1'b0;
   end // block busy_gpu
 
   /////////////////////////////////////////////////////////////////////////
@@ -556,7 +706,7 @@ module mem_ctrl(
   ////////////////////
   // sram_set_request:
   always @ (posedge iValidRead) begin
-    oValidRequest <= 0'b0;
+    oValidRequest <= 1'b0;
   end // block sram_set_request
 
 endmodule // men_ctrl
