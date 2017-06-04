@@ -81,6 +81,7 @@ module mem_ctrl(
   parameter INITIAL_BLOCK_SIZE = 16'h0002;
   parameter CAM_BLOCK_SIZE     = 16'h0005;
   parameter OBJ_BLOCK_SIZE     = 16'h000E;
+  parameter MATRIX_BLOCK_SIZE  = 16'h000C;
   parameter CLS_OBJ_BLOCK_SIZE = 16'h0001;
 
 
@@ -147,6 +148,9 @@ module mem_ctrl(
   reg [FLAG_SIZE-1:0] rBusyGPUFlag = UP;
   reg [FLAG_SIZE-1:0] rValidReqFlag = UP;
   reg [FLAG_SIZE-1:0] rErrorGPUFlag = UP;
+  reg [FLAG_SIZE-1:0] rSubStateChgFlag = UP;
+  reg [FLAG_SIZE-1:0] rInitObjFlag = UP;
+  reg [FLAG_SIZE-1:0] rInitVtxFlag = UP;
 
   // State registers
   reg [GLB_STATE_SIZE-1:0]       rGlbState      = GLB_WAIT_UART;
@@ -164,8 +168,7 @@ module mem_ctrl(
   reg [15:0] rData           = 16'h0000;
   reg [15:0] rRespFinalState = 16'h0000;
   reg        rOffsetVertex   = 1'b0;
-  reg        rTMatrixExcep   = 1'b0;
-  reg        rCloseObjExcep  = 1'b0;
+  reg        rFinalExcep     = 1'b0;
 
   assign ioData = (!oWrite) ? 16'bz : rData;
 
@@ -276,14 +279,14 @@ module mem_ctrl(
           CLS_OBJ_VALID_TAG: begin
             rGlbState <= GLB_CLOSE_OBJ;
             rOffsetAddr <= CLS_OBJ_BLOCK_SIZE;
-            rCloseObjExcep <= 1'b1;
+            rFinalExcep <= 1'b1;
             rSubStateChg <= 1'b1;
           end
 
           TMATRIX_VALID_TAG: begin
             rGlbState <= GLB_CHG_TMATRIX;
-            rOffsetAddr <= OBJ_BLOCK_SIZE;
-            rTMatrixExcep <= 1'b1;
+            rOffsetAddr <= MATRIX_BLOCK_SIZE;
+            rFinalExcep <= 1'b1;
             rSubStateChg <= 1'b1;
           end
 
@@ -336,14 +339,12 @@ module mem_ctrl(
         rRespFinalState <= iRx16Bits;
         iTx16BitsReady <= 1'b1;
         rSubState <= SUB_SET_ADDRESS;
-        rSubStateChg <= 1'b0;
       end // case SUB_RESPONSE_TO_APPROVAL
 
       SUB_SET_ADDRESS: begin
         rActualAddr <= iRx16Bits;
         rStopAddr <= iRx16Bits + rOffsetAddr;
         rSubState <= SUB_WRITING_IN_SRAM;
-        rSubStateChg <= 1'b0;
       end // case SUB_SET_ADDRESS
 
       SUB_WRITING_IN_SRAM: begin
@@ -351,21 +352,19 @@ module mem_ctrl(
 
           if (iRx16Bits == FINAL_BLOCK_VALID_TAG) begin
 
-            if (!rTMatrixExcep || !rCloseObjExcep) begin
+            if (!rFinalExcep) begin
               rData <= iRx16Bits;
               oAddress <= rStopAddr;
               oWrite <= 1'b1;
               oValidRequest <= 1'b1;
-              rSubState <= SUB_RESPONSE_TO_APPROVAL;
-              rGlbState <= GLB_WAIT_UART;
-            end else begin
-              rTMatrixExcep <= 1'b0;
-              rCloseObjExcep <= 1'b0;
-            end
 
+            end else begin
+              rFinalExcep <= 1'b0;
+            end
+            rSubState <= SUB_RESPONSE_TO_APPROVAL;
+            rGlbState <= GLB_WAIT_UART;
             iTx16Bits <= rRespFinalState;
             iTx16BitsReady <= 1'b1;
-            rSubStateChg <= 1'b0;
 
           end else begin
             rErrorGPU <= 1'b1;
@@ -377,7 +376,6 @@ module mem_ctrl(
           oWrite <= 1'b1;
           oValidRequest <= 1'b1;
           rActualAddr <= rActualAddr + 16'h0001;
-          rSubStateChg <= 1'b0;
         end
 
       end // case SUB_WRITING_IN_SRAM
@@ -669,9 +667,9 @@ module mem_ctrl(
 
         REFRESH_VERTEX_Z: begin
           if (oAddress == wLastObjAddr) begin
-            rRefreshState <= REFRESH_VERTEX_X;
-          end else begin
             rRefreshState <= REFRESH_INIT_OBJ;
+          end else begin
+            rRefreshState <= REFRESH_VERTEX_X;
           end
 
           if (r_first_vtx == 1'b1) begin
@@ -703,6 +701,19 @@ module mem_ctrl(
   /////////////////////////////////////////////////////////////////////
   // low_signal: Keep the signals into it in HIGH at lest 2 clock times
   always @ (posedge iClock) begin
+
+  if (rSubStateChg) begin
+    case (rSubStateChgFlag)
+
+      UP: rSubStateChgFlag <= DOWN;
+
+      DOWN: begin
+        rSubStateChg <= 1'b0;
+        rSubStateChgFlag <= UP;
+      end // case DOWN
+
+    endcase // rSubStateChgFlag
+  end
 
     if (oTxReady) begin
       case (rTxReadyFlag)
@@ -743,6 +754,32 @@ module mem_ctrl(
       endcase // rBusyGPUFlag
     end
 
+    if (oInitObj) begin
+      case (rInitObjFlag)
+
+        UP: rInitObjFlag <= DOWN;
+
+        DOWN: begin
+          oInitObj <= 1'b0;
+          rInitObjFlag <= UP;
+        end // case DOWN
+
+      endcase // rInitObjFlag
+    end
+
+    if (oInitVtx) begin
+      case (rInitVtxFlag)
+
+        UP: rInitVtxFlag <= DOWN;
+
+        DOWN: begin
+          oInitVtx <= 1'b0;
+          rInitVtxFlag <= UP;
+        end // case DOWN
+
+      endcase // rInitVtxFlag
+    end
+
     if (oValidRequest) begin
       case (rValidReqFlag)
 
@@ -771,19 +808,11 @@ module mem_ctrl(
 
   end // block low_signal
 
-  ////////////////////////////////////////////////////////////////
-  // sram_set_request: Set de oValidRequest in LOW when write/read
-  //                   in SRAM was finished
-  //always @ (posedge iValidRead) begin
-  //  oValidRequest <= 1'b0;
-  //end // block sram_set_request
-
   /////////////////////////////////////////////
   // error_report: Report when GPU has an error
   always @ (posedge rErrorGPU) begin
     iTx16Bits <= ERROR_TAG;
     iTx16BitsReady <= 1'b1;
-    rSubStateChg <= 1'b0;
   end
 
 endmodule // men_ctrl
