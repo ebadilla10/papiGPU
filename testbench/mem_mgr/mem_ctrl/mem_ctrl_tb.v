@@ -6,11 +6,23 @@ module mem_ctrl_tb;
 
 reg clk = 0;
 
+reg rValidReadFlag = 1'b0;
+
 // Inputs from UART
 reg [7:0] iRxByte;
 reg       iRxReady;
 reg       iRxError;
 reg       iTxSent;
+
+// Inputs from SRAN
+wire [15:0] ioData;
+wire [21:0] oAddress;
+wire        oValidRequest; // REQ
+wire        oWrite;
+reg         iValidRead;
+reg [15:0]  Data = 16'h0000;
+
+assign ioData = (!oWrite) ? Data : 16'hZZZZ;
 
 parameter PERIOD = 31.25; //31.25ns = 32MHz
 always begin
@@ -27,7 +39,13 @@ mem_ctrl mem(
   .iRxByte(iRxByte),
   .iRxReady(iRxReady),
   .iRxError(iRxError),
-  .iTxSent(iTxSent)
+  .iTxSent(iTxSent),
+
+  .ioData(ioData),
+  .oAddress(oAddress),
+  .oValidRequest(oValidRequest),
+  .oWrite(oWrite),
+  .iValidRead(iValidRead)
 );
 
 // Initial the tested
@@ -920,7 +938,7 @@ initial begin
 
   #(CICLES_PER_BIT * PERIOD * 10);
 
-  //---- 0x0001
+  //---- 0x(Next Object Address) = 0x001C
 
   iRxByte = 8'h00;
   iRxReady = 1'b1;
@@ -1261,7 +1279,114 @@ initial begin
 
   #(CICLES_PER_BIT * PERIOD * 10);
 
+  // CONFIGURE REFRESH
+  // -----------------
+
+  //---- 0x1234
+  iRxByte = 8'h12;
+  iRxReady = 1'b1;
+  iRxError = 1'b0;
+  #(PERIOD);
+  iRxReady = 1'b0;
+
+  #(CICLES_PER_BIT * PERIOD * 10);
+
+  iRxByte = 8'h34;
+  iRxReady = 1'b1;
+  iRxError = 1'b0;
+  #(PERIOD);
+  iRxReady = 1'b0;
+
+  // Sending answer
+  #(CICLES_PER_BIT * PERIOD * 10);
+  iTxSent = 1'b1;
+  #(PERIOD);
+  iTxSent = 1'b0;
+
+  #(CICLES_PER_BIT * PERIOD * 10);
+
+  //---- 0xAAAA
+  iTxSent = 1'b1;
+  #(PERIOD);
+  iTxSent = 1'b0;
+
+  iRxByte = 8'hAA;
+  iRxReady = 1'b1;
+  iRxError = 1'b0;
+  #(PERIOD);
+  iRxReady = 1'b0;
+
+  #(CICLES_PER_BIT * PERIOD * 10);
+
+  iRxByte = 8'hAA;
+  iRxReady = 1'b1;
+  iRxError = 1'b0;
+  #(PERIOD);
+  iRxReady = 1'b0;
+
+  // WAIT FOR FINISH
+  #(PERIOD * 350);
+
   $finish;
+end
+
+always @ ( posedge  oValidRequest) begin
+
+  if (!oWrite) begin
+    #(6 * PERIOD);
+
+    case (oAddress)
+      0: Data = 16'hCCCC;
+      1: Data = 16'h0001;
+      2: Data = 16'hBBBB;
+      3: Data = 16'h1234;
+      4: Data = 16'h2345;
+      5: Data = 16'h3456;
+      6: Data = 16'h4567;
+      7: Data = 16'hEEEE;
+      8: Data = 16'h001C;
+      9: Data = 16'h1234;
+      10: Data = 16'h2345;
+      11: Data = 16'h3456;
+      12: Data = 16'h4567;
+      13: Data = 16'h5678;
+      14: Data = 16'h6789;
+      15: Data = 16'h789A;
+      16: Data = 16'h89AB;
+      17: Data = 16'h9ABC;
+      18: Data = 16'hABCD;
+      19: Data = 16'hBCDE;
+      20: Data = 16'hCDEF;
+      21: Data = 16'h9999;
+      22: Data = 16'h1234;
+      23: Data = 16'h2345;
+      24: Data = 16'h3456;
+      25: Data = 16'h4567;
+      26: Data = 16'h5678;
+      27: Data = 16'h6789;
+      28: Data = 16'hFFFF;
+      default: Data = 16'hFFFF;
+    endcase
+
+    iValidRead = 1'b1;
+
+  end // !oWrite
+
+end
+
+always @ ( posedge clk ) begin
+if (iValidRead) begin
+  case (rValidReadFlag)
+
+    1'b0: rValidReadFlag <= 1'b1;
+
+    1'b1: begin
+      iValidRead <= 1'b0;
+      rValidReadFlag <= 1'b0;
+    end // case DOWN
+
+  endcase // rValidReqFlag
+end
 end
 
 endmodule
