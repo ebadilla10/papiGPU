@@ -49,7 +49,7 @@ module mem_ctrl(
 
   // Memory control sizes
   parameter GLB_STATE_SIZE       = 3;
-  parameter UART_SEND_STATE_SIZE = 1;
+  parameter FLAG_SIZE            = 1;
   parameter SUB_STATE_SIZE       = 2;
   parameter VIA_UART_STATE_SIZE  = 2;
   parameter REFRESH_STATE_SIZE   = 5;
@@ -66,9 +66,9 @@ module mem_ctrl(
   parameter GLB_CHG_TMATRIX = 3'b110;
   parameter GLB_REFRESH     = 3'b111;
 
-  // UART Sending States
-  parameter UART_TO_SEND  = 1'b0;
-  parameter UART_TO_CLOSE = 1'b1;
+  // Flag States
+  parameter UP  = 1'b0;
+  parameter DOWN = 1'b1;
 
   // General Sub-States, except for Refresh
   parameter SUB_RESPONSE_TO_APPROVAL = 2'b00;
@@ -80,7 +80,7 @@ module mem_ctrl(
   parameter INITIAL_ADDRESS    = 16'h0000;
   parameter INITIAL_BLOCK_SIZE = 16'h0002;
   parameter CAM_BLOCK_SIZE     = 16'h0005;
-  parameter OBJ_BLOCK_SIZE     = 16'h000D;
+  parameter OBJ_BLOCK_SIZE     = 16'h000E;
   parameter CLS_OBJ_BLOCK_SIZE = 16'h0001;
 
 
@@ -141,9 +141,15 @@ module mem_ctrl(
   parameter RFRSH_OBJ_VALID_TAG = 1'b0;
   parameter RFRSH_OBJ_NEXT_ADDR = 1'b1;
 
+  // Flags
+  reg [FLAG_SIZE-1:0] rTx16BitsReadyFlag = UP;
+  reg [FLAG_SIZE-1:0] rTxReadyFlag = UP;
+  reg [FLAG_SIZE-1:0] rBusyGPUFlag = UP;
+  reg [FLAG_SIZE-1:0] rValidReqFlag = UP;
+  reg [FLAG_SIZE-1:0] rErrorGPUFlag = UP;
+
   // State registers
   reg [GLB_STATE_SIZE-1:0]       rGlbState      = GLB_WAIT_UART;
-  reg [UART_SEND_STATE_SIZE-1:0] rUartSendState = UART_TO_SEND;
   reg [SUB_STATE_SIZE-1:0]       rSubState      = SUB_RESPONSE_TO_APPROVAL;
   reg                            rSubStateChg   = 1'b0;
   reg [REFRESH_STATE_SIZE-1:0]   rRefreshState  = REFRESH_INIT_GPU;
@@ -159,6 +165,7 @@ module mem_ctrl(
   reg [15:0] rRespFinalState = 16'h0000;
   reg        rOffsetVertex   = 1'b0;
   reg        rTMatrixExcep   = 1'b0;
+  reg        rCloseObjExcep  = 1'b0;
 
   assign ioData = (!oWrite) ? 16'bz : rData;
 
@@ -175,6 +182,7 @@ module mem_ctrl(
   // Refresh state registers
   reg rInitRefresh = 1'b0;
   reg rBusyGPU = 1'b0;
+  reg rErrorGPU = 1'b0;
 
   // Register
   reg [15:0] rNumObjts = 16'h0000;
@@ -262,13 +270,14 @@ module mem_ctrl(
           VRTX_VALID_TAG: begin
             rGlbState <= GLB_SET_OBJ_VTX;
             rSubStateChg <= 1'b1;
+            rOffsetVertex <= 1'b1;
           end
 
           CLS_OBJ_VALID_TAG: begin
             rGlbState <= GLB_CLOSE_OBJ;
             rOffsetAddr <= CLS_OBJ_BLOCK_SIZE;
+            rCloseObjExcep <= 1'b1;
             rSubStateChg <= 1'b1;
-            rOffsetVertex <= 1'b1;
           end
 
           TMATRIX_VALID_TAG: begin
@@ -298,7 +307,7 @@ module mem_ctrl(
 
       GLB_SET_OBJ_VTX: begin
         if (rOffsetVertex) begin
-          rOffsetAddr <= iRx16Bits;
+          rOffsetAddr <= (iRx16Bits * 3) + 1;
           rOffsetVertex <= 1'b0;
         end else begin
           rSubStateChg <= 1'b1;
@@ -340,20 +349,28 @@ module mem_ctrl(
       SUB_WRITING_IN_SRAM: begin
         if (rActualAddr == rStopAddr) begin
 
-          if (!rTMatrixExcep) begin
-            rData <= FINAL_BLOCK_VALID_TAG;
-            oAddress <= rStopAddr;
-            oWrite <= 1'b1;
-            oValidRequest <= 1'b1;
-            rSubState <= SUB_RESPONSE_TO_APPROVAL;
-            rGlbState <= GLB_WAIT_UART;
+          if (iRx16Bits == FINAL_BLOCK_VALID_TAG) begin
+
+            if (!rTMatrixExcep || !rCloseObjExcep) begin
+              rData <= iRx16Bits;
+              oAddress <= rStopAddr;
+              oWrite <= 1'b1;
+              oValidRequest <= 1'b1;
+              rSubState <= SUB_RESPONSE_TO_APPROVAL;
+              rGlbState <= GLB_WAIT_UART;
+            end else begin
+              rTMatrixExcep <= 1'b0;
+              rCloseObjExcep <= 1'b0;
+            end
+
+            iTx16Bits <= rRespFinalState;
+            iTx16BitsReady <= 1'b1;
+            rSubStateChg <= 1'b0;
+
           end else begin
-            rTMatrixExcep <= 1'b0;
+            rErrorGPU <= 1'b1;
           end
 
-          iTx16Bits <= rRespFinalState;
-          iTx16BitsReady <= 1'b1;
-          rSubStateChg <= 1'b0;
         end else begin
           rData <= iRx16Bits;
           oAddress <= rActualAddr;
@@ -362,6 +379,7 @@ module mem_ctrl(
           rActualAddr <= rActualAddr + 16'h0001;
           rSubStateChg <= 1'b0;
         end
+
       end // case SUB_WRITING_IN_SRAM
 
       default: begin
@@ -371,8 +389,8 @@ module mem_ctrl(
 
   end // block sub_states_manager
 
-  //////////////////////
-  // refresh_controller:
+  ////////////////////////////////////////////
+  // refresh_active: Active the Refresh States
   always @ ( posedge rInitRefresh) begin
 
     oAddress <= INITIAL_ADDRESS;
@@ -381,7 +399,11 @@ module mem_ctrl(
 
   end // block refresh_controller
 
+  /////////////////////////////////////////////
+  // refresh_controller: Set the Refresh States
   always @ ( posedge iValidRead ) begin
+
+    rSubState <= SUB_RESPONSE_TO_APPROVAL;
 
     if (rInitRefresh) begin
 
@@ -489,7 +511,6 @@ module mem_ctrl(
                 FINAL_BLOCK_VALID_TAG: begin
                   rInitRefresh <= 1'b0;
                   rGlbState <= GLB_WAIT_UART;
-                  rSubState <= SUB_RESPONSE_TO_APPROVAL;
                   iTx16Bits <= GLB_REFRESH;
                   iTx16BitsReady <= 1'b1;
                 end // case FINAL_BLOCK_VALID_TAG
@@ -679,34 +700,90 @@ module mem_ctrl(
     rBusyGPU <= 1'b0;
   end // block busy_gpu
 
-  /////////////////////////////////////////////////////////////////////////
-  // uart_send_state: When UART is sending data this keep the Tx Ready HIGH
-  //                  for at less one clock cycle
+  /////////////////////////////////////////////////////////////////////
+  // low_signal: Keep the signals into it in HIGH at lest 2 clock times
   always @ (posedge iClock) begin
+
     if (oTxReady) begin
-      case (rUartSendState)
+      case (rTxReadyFlag)
 
-        UART_TO_SEND: rUartSendState <= UART_TO_CLOSE;
+        UP: rTxReadyFlag <= DOWN;
 
-        UART_TO_CLOSE: begin
+        DOWN: begin
           oTxReady <= 1'b0;
-          rUartSendState <= UART_TO_SEND;
-        end // case UART_TO_CLOSE
+          rTxReadyFlag <= UP;
+        end // case DOWN
 
-        default: begin
-          //** TODO: IDK if it's necessary
-        end // case default
+      endcase // rTxReadyFlag
+    end
 
-      endcase // rUartSendState
-    end else begin
-      //** TODO: IDK if it's necessary
-    end // if-else oTxReady
-  end // block uart_send_state
+    if (iTx16BitsReady) begin
+      case (rTx16BitsReadyFlag)
 
-  ////////////////////
-  // sram_set_request:
-  always @ (posedge iValidRead) begin
-    oValidRequest <= 1'b0;
-  end // block sram_set_request
+        UP: rTx16BitsReadyFlag <= DOWN;
+
+        DOWN: begin
+          iTx16BitsReady <= 1'b0;
+          rTx16BitsReadyFlag <= UP;
+        end // case DOWN
+
+      endcase // rTx16BitsReadyFlag
+    end
+
+    if (rBusyGPU) begin
+      case (rBusyGPUFlag)
+
+        UP: rBusyGPUFlag <= DOWN;
+
+        DOWN: begin
+          rBusyGPU <= 1'b0;
+          rBusyGPUFlag <= UP;
+        end // case DOWN
+
+      endcase // rBusyGPUFlag
+    end
+
+    if (oValidRequest) begin
+      case (rValidReqFlag)
+
+        UP: rValidReqFlag <= DOWN;
+
+        DOWN: begin
+          oValidRequest <= 1'b0;
+          rValidReqFlag <= UP;
+        end // case DOWN
+
+      endcase // rValidReqFlag
+    end
+
+    if (rErrorGPU) begin
+      case (rErrorGPUFlag)
+
+        UP: rErrorGPUFlag <= DOWN;
+
+        DOWN: begin
+          rErrorGPU <= 1'b0;
+          rErrorGPUFlag <= UP;
+        end // case DOWN
+
+      endcase // rErrorGPUFlag
+    end
+
+  end // block low_signal
+
+  ////////////////////////////////////////////////////////////////
+  // sram_set_request: Set de oValidRequest in LOW when write/read
+  //                   in SRAM was finished
+  //always @ (posedge iValidRead) begin
+  //  oValidRequest <= 1'b0;
+  //end // block sram_set_request
+
+  /////////////////////////////////////////////
+  // error_report: Report when GPU has an error
+  always @ (posedge rErrorGPU) begin
+    iTx16Bits <= ERROR_TAG;
+    iTx16BitsReady <= 1'b1;
+    rSubStateChg <= 1'b0;
+  end
 
 endmodule // men_ctrl
