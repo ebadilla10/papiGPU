@@ -6,9 +6,9 @@ module mem_ctrl(
   input wire iReset,
 
   // Outputs to Graphics Pipeline
-  output reg        oEnable,
-  output reg        oInitObj,
-  output reg        oInitVtx,
+  output reg        oEnable = 1'b0,
+  output reg        oInitObj = 1'b0,
+  output reg        oInitVtx = 1'b0,
   output reg [15:0] oCamVerX,
   output reg [15:0] oCamVerY,
   output reg [15:0] oCamVerZ,
@@ -34,8 +34,8 @@ module mem_ctrl(
   input wire   iValidRead, // ACK
   // Outputs to SRAM
   output reg [21:0] oAddress,
-  output reg        oValidRequest, // REQ
-  output reg        oWrite,
+  output reg        oValidRequest = 1'b0, // REQ
+  output reg        oWrite = 1'b0,
 
   // Inputs from UART
   input wire [7:0] iRxByte,
@@ -44,7 +44,7 @@ module mem_ctrl(
   input wire       iTxSent,
   // Output to UART
   output reg [7:0] oTxByte,
-  output reg       oTxReady
+  output reg       oTxReady = 1'b0
 );
 
   // Memory control sizes
@@ -173,17 +173,16 @@ module mem_ctrl(
   assign ioData = (!oWrite) ? 16'bz : rData;
 
   // Collect data via UART registers
-  reg        iRx16BitsReady;
+  reg        iRx16BitsReady = 1'b0;
   reg [15:0] iRx16Bits;
 
-  reg        iTx16BitsReady;
+  reg        iTx16BitsReady = 1'b0;
   reg [15:0] iTx16Bits;
 
   reg [VIA_UART_STATE_SIZE-1:0] uart_receive_state = UART_FIRST_BYTE;
   reg [VIA_UART_STATE_SIZE-1:0] uart_transmit_state = UART_FIRST_BYTE;
 
   // Refresh state registers
-  reg rInitRefresh = 1'b0;
   reg rBusyGPU = 1'b0;
   reg rErrorGPU = 1'b0;
 
@@ -195,7 +194,7 @@ module mem_ctrl(
   reg [15:0] rNextObjAddr = 16'h0000;
   wire [15:0] wLastObjAddr;
 
-  reg r_first_vtx = 1'b0;
+  reg rFirstVTX = 1'b0;
 
   assign wLastObjAddr = rNextObjAddr - 1;
 
@@ -228,7 +227,6 @@ module mem_ctrl(
       oTxByte <= iTx16Bits[15:8];
       oTxReady <= 1'b1;
       uart_transmit_state <= UART_SECOND_BYTE;
-    end else begin
     end
 
   end // block uart_transmitter
@@ -293,7 +291,7 @@ module mem_ctrl(
           REFRESH_VALID_TAG: begin
             rGlbState <= GLB_REFRESH;
             rSubStateChg <= 1'b1;
-            rInitRefresh <= 1'b1;
+            oEnable <= 1'b1;
           end
           default: rGlbState <= GLB_WAIT_UART;
 
@@ -381,6 +379,7 @@ module mem_ctrl(
       end // case SUB_WRITING_IN_SRAM
 
       default: begin
+        rErrorGPU <= 1'b1;
       end // case default
 
     endcase // rSubState
@@ -389,7 +388,7 @@ module mem_ctrl(
 
   ////////////////////////////////////////////
   // refresh_active: Active the Refresh States
-  always @ ( posedge rInitRefresh) begin
+  always @ ( posedge oEnable) begin
 
     oAddress <= INITIAL_ADDRESS;
     oWrite <= 1'b0;
@@ -403,7 +402,7 @@ module mem_ctrl(
 
     rSubState <= SUB_RESPONSE_TO_APPROVAL;
 
-    if (rInitRefresh) begin
+    if (oEnable) begin
 
       case(rRefreshState)
 
@@ -420,9 +419,11 @@ module mem_ctrl(
                 end // case GPU_VALID_TAG
 
                 ~GPU_VALID_TAG: begin
+                  // TODO: Implement when GPU isn't enabled
                 end // case ~GPU_VALID_TAG
 
                 default: begin
+                  rErrorGPU <= 1'b1;
                 end // case default
 
               endcase // ioData
@@ -438,6 +439,7 @@ module mem_ctrl(
             end // case RFRSH_INT_GPU_NUM_OBJ
 
             default: begin
+              rErrorGPU <= 1'b1;
             end // case default
 
           endcase // rRfrshInitGpuSubState
@@ -451,7 +453,7 @@ module mem_ctrl(
             oValidRequest <= 1'b1;
             rRefreshState <= REFRESH_CAM_VER_X;
           end else begin
-
+            rErrorGPU <= 1'b1;
           end
         end // case REFRESH_INIT_CAM
 
@@ -507,11 +509,15 @@ module mem_ctrl(
                 end // case ~OBJ_VALID_TAG
 
                 FINAL_BLOCK_VALID_TAG: begin
-                  rInitRefresh <= 1'b0;
+                  oEnable <= 1'b0;
                   rGlbState <= GLB_WAIT_UART;
-                  iTx16Bits <= GLB_REFRESH;
+                  iTx16Bits <= REFRESH_VALID_TAG;
                   iTx16BitsReady <= 1'b1;
                 end // case FINAL_BLOCK_VALID_TAG
+
+                default: begin
+                  rErrorGPU <= 1'b1;
+                end
 
               endcase // ioData
             end // case RFRSH_OBJ_VALID_TAG
@@ -534,11 +540,12 @@ module mem_ctrl(
             end // case RFRSH_OBJ_NEXT_ADDR
 
             default: begin
+              rErrorGPU <= 1'b1;
             end // case default
 
           endcase // rRfrshObjSubState
 
-          r_first_vtx <= 1'b1;
+          rFirstVTX <= 1'b1;
 
         end // case REFRESH_INIT_OBJ
 
@@ -548,7 +555,6 @@ module mem_ctrl(
           oWrite <= 1'b0;
           oValidRequest <= 1'b1;
           rRefreshState <= REFRESH_COS_PITCH;
-
         end // case REFRESH_COS_ROLL
 
         REFRESH_COS_PITCH: begin
@@ -646,6 +652,7 @@ module mem_ctrl(
             oValidRequest <= 1'b1;
             rRefreshState <= REFRESH_VERTEX_X;
           end else begin
+            rErrorGPU <= 1'b1;
           end
         end // case REFRESH_INIT_VTX
 
@@ -672,9 +679,9 @@ module mem_ctrl(
             rRefreshState <= REFRESH_VERTEX_X;
           end
 
-          if (r_first_vtx == 1'b1) begin
+          if (rFirstVTX == 1'b1) begin
             oInitObj <= 1'b1;
-            r_first_vtx <= 1'b0;
+            rFirstVTX <= 1'b0;
           end
 
           oVertexZ <= ioData;
@@ -684,9 +691,13 @@ module mem_ctrl(
           oInitVtx <= 1'b1;
         end // case REFRESH_VERTEX_Z
 
+        default: begin
+          rErrorGPU <= 1'b1;
+        end // case default
+
       endcase // rRefreshState
 
-    end // if rInitRefresh
+    end // if oEnable
 
   end
 
