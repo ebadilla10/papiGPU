@@ -290,7 +290,6 @@ module mem_ctrl(
 
           REFRESH_VALID_TAG: begin
             rGlbState <= GLB_REFRESH;
-            rSubStateChg <= 1'b1;
             oEnable <= 1'b1;
           end
           default: rGlbState <= GLB_WAIT_UART;
@@ -511,7 +510,7 @@ module mem_ctrl(
                 FINAL_BLOCK_VALID_TAG: begin
                   oEnable <= 1'b0;
                   rGlbState <= GLB_WAIT_UART;
-                  iTx16Bits <= REFRESH_VALID_TAG;
+                  iTx16Bits <= ~(REFRESH_VALID_TAG);
                   iTx16BitsReady <= 1'b1;
                 end // case FINAL_BLOCK_VALID_TAG
 
