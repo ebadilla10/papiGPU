@@ -24,6 +24,8 @@ reg [15:0]  Data = 16'h0000;
 
 assign ioData = (!oWrite) ? Data : 16'hZZZZ;
 
+//////////////////
+// Begin the Clock
 parameter PERIOD = 31.25; //31.25ns = 32MHz
 always begin
   clk = 1'b0;
@@ -1330,6 +1332,8 @@ initial begin
   $finish;
 end
 
+//////////////////////
+// sram_read_simulator
 always @ ( posedge  oValidRequest) begin
 
   if (!oWrite) begin
@@ -1374,6 +1378,8 @@ always @ ( posedge  oValidRequest) begin
 
 end
 
+//////////////////////////////////////
+// Low iValidRead after 2 clock cycles
 always @ ( posedge clk ) begin
 if (iValidRead) begin
   case (rValidReadFlag)
