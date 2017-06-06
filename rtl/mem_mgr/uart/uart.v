@@ -49,6 +49,7 @@ module uart_ctrl(
 	parameter FRAME_ERR = 3'b101;
 
 
+  reg [7:0] rRxByte = 8'h00;
 	reg [BITS_SAMPLE-1:0] clk_divide_tx;
 
 	reg sample_clk;  //Use DCM and counter to divide 32MHz / (38400 * 16 * 4) = 13
@@ -124,7 +125,7 @@ module uart_ctrl(
 		if (iReset)
 		 begin
 			rx_state <= IDLE;
-			oRxByte <= 8'b0;
+			rRxByte <= 8'b0;
 			oRxReady <= 0;
 			oRxError <= 0;
 			bit_counter <= 0;
@@ -139,7 +140,7 @@ module uart_ctrl(
 					sample_counter <= 2; //By the time we start counting the start bit we have missed two
 					oRxReady <= 0;
 					oRxError <= 0;
-					oRxByte <= 8'b0;
+					rRxByte <= 8'b0;
 					if (~rx_bit)
 					 begin
 						rx_state <= START;
@@ -153,7 +154,7 @@ module uart_ctrl(
 					bit_counter <= 0;
 					oRxReady <= 0;
 					oRxError <= 0;
-					oRxByte <= 8'b0;
+					rRxByte <= 8'b0;
 					if (sample_counter == SAMPLE_COUNT/2)
 					 begin
 						//Half a bit sample offset - check start bit still low
@@ -179,7 +180,7 @@ module uart_ctrl(
 					if (sample_counter == SAMPLE_COUNT - 1)
 					 begin
 						//Read in next bit (mask with what we already have)
-						oRxByte <= oRxByte | (rx_bit << bit_counter);
+						rRxByte <= rRxByte | (rx_bit << bit_counter);
 						sample_counter <= 0;
 						if (bit_counter == 3'b111)
 						 begin
@@ -195,7 +196,7 @@ module uart_ctrl(
 					 end
 					else
 					 begin
-						oRxByte <= oRxByte;
+						rRxByte <= rRxByte;
 						rx_state <= BUSY;
 						bit_counter <= bit_counter;
 						if (rx_edge)
@@ -226,7 +227,7 @@ module uart_ctrl(
 					 begin
 						sample_counter <= sample_counter + 1'b1;
 						rx_state <= STOP;
-						oRxByte <= oRxByte;
+						rRxByte <= rRxByte;
 						bit_counter <= 0;
 					 end
 					end //STOP
@@ -236,7 +237,8 @@ module uart_ctrl(
 						oRxReady <= 1;
 						rx_state <= IDLE;
 						bit_counter <= 0;
-						oRxByte <= oRxByte;
+						rRxByte <= rRxByte;
+						oRxByte <= rRxByte;
 					end //READ
 				FRAME_ERR: begin
 						sample_counter <= 0;
@@ -244,11 +246,11 @@ module uart_ctrl(
 						oRxReady <= 0;
 						rx_state <= IDLE;
 						bit_counter <= 0;
-						oRxByte <= oRxByte;
+						rRxByte <= rRxByte;
 					end //FRAME_ERR
 				default: begin
 						rx_state <= IDLE;
-						oRxByte <= 8'b0;
+						rRxByte <= 8'b0;
 						oRxReady <= 0;
 						oRxError <= 0;
 						bit_counter <= 0;
