@@ -1,0 +1,62 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Thu Jun  1 17:33:17 2017
+[*]
+[dumpfile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/graphics_pipeline/signals.vcd"
+[dumpfile_mtime] "Thu Jun  1 17:32:51 2017"
+[dumpfile_size] 157865
+[savefile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/graphics_pipeline/config_signals.gtkw"
+[timestart] 0
+[size] 1545 1173
+[pos] 126 27
+*-2.042800 6 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test.
+[treeopen] test.gp1.
+[sst_width] 253
+[signals_width] 185
+[sst_expanded] 1
+[sst_vpaned_height] 445
+@c00022
+test.gp1.o_X[15:0]
+@28
+(0)test.gp1.o_X[15:0]
+(1)test.gp1.o_X[15:0]
+(2)test.gp1.o_X[15:0]
+(3)test.gp1.o_X[15:0]
+(4)test.gp1.o_X[15:0]
+(5)test.gp1.o_X[15:0]
+(6)test.gp1.o_X[15:0]
+(7)test.gp1.o_X[15:0]
+(8)test.gp1.o_X[15:0]
+(9)test.gp1.o_X[15:0]
+(10)test.gp1.o_X[15:0]
+(11)test.gp1.o_X[15:0]
+(12)test.gp1.o_X[15:0]
+(13)test.gp1.o_X[15:0]
+(14)test.gp1.o_X[15:0]
+(15)test.gp1.o_X[15:0]
+@1401200
+-group_end
+@c00022
+test.gp1.o_Y[15:0]
+@28
+(0)test.gp1.o_Y[15:0]
+(1)test.gp1.o_Y[15:0]
+(2)test.gp1.o_Y[15:0]
+(3)test.gp1.o_Y[15:0]
+(4)test.gp1.o_Y[15:0]
+(5)test.gp1.o_Y[15:0]
+(6)test.gp1.o_Y[15:0]
+(7)test.gp1.o_Y[15:0]
+(8)test.gp1.o_Y[15:0]
+(9)test.gp1.o_Y[15:0]
+(10)test.gp1.o_Y[15:0]
+(11)test.gp1.o_Y[15:0]
+(12)test.gp1.o_Y[15:0]
+(13)test.gp1.o_Y[15:0]
+(14)test.gp1.o_Y[15:0]
+(15)test.gp1.o_Y[15:0]
+@1401200
+-group_end
+[pattern_trace] 1
+[pattern_trace] 0
