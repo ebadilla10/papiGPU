@@ -1,6 +1,6 @@
 inicio:
-	iverilog test.v -o test.exe
-	vvp test.exe
-	gtkwave config_signals.gtkw
+	iverilog testgp.v -o test.o
+	vvp test.o
+	gtkwave config_signals_gp.gtkw
 clean:
-	rm -rf *.vcd *.exe
+	rm -rf *.vcd *.o

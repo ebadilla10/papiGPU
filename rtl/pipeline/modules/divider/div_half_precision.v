@@ -5,16 +5,16 @@
 //-----------------------------------------------------
 module divhalfprecision(
 output reg [15:0] 	o_Quotient,		// Output of the division.
-output reg		  	o_Exception,	// Output division by zero.
+output reg			o_Exception,	// Output division by zero.
 input wire [15:0]   i_Dividend,		// Input Dividend.
 input wire [15:0]	i_Divisor		// Input Divisor.
 );
-	initial
+/*	initial
 	begin
-		$dumpfile ("signals.vcd");
+		$dumpfile ("signals_divider.vcd");
 		$dumpvars;
 	end
-
+*/
 //Internal Variables
 wire[10:0] w_Mantissa_Division	; 
 wire[4:0]  w_Sub_Exps	;
@@ -50,8 +50,10 @@ assign w_XOR_Sign = i_Dividend[15] ^ i_Divisor[15];
 				else
 				r_one_found = 1'b1;
 				end
-				if(w_Sub_Exps[4:0] - counter_shift_mantissa[3:0] > 16)
+				if(w_Sub_Exps[4:0] - counter_shift_mantissa[3:0] > 16) begin
 				o_Quotient[15:0] = 16'b0111111111111111; //Overflow
+				o_Exception = 1'b1;
+				end
 				else begin
 					o_Quotient[15] = w_XOR_Sign;
 					o_Quotient[14:10] = w_Sub_Exps[4:0]-counter_shift_mantissa[3:0]+5'd15;					
@@ -69,8 +71,10 @@ assign w_XOR_Sign = i_Dividend[15] ^ i_Divisor[15];
 					else
 					r_one_found = 1'b1;
 					end
-					if(w_Sub_Exps[4:0] - counter_shift_mantissa[3:0] < 16)
+					if(w_Sub_Exps[4:0] - counter_shift_mantissa[3:0] < 16) begin
 						o_Quotient[15:0] = 16'd0; //Underflow
+						o_Exception = 1'b1;
+					end
 					else begin
 						o_Quotient[15] = w_XOR_Sign;
 						o_Quotient[14:10] = w_Sub_Exps[4:0]-counter_shift_mantissa[3:0]+5'd15;					

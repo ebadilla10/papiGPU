@@ -1,29 +1,15 @@
 `include "graphics_pipeline.v"
 module test(
-	output  reg [15:0]	o_CamVerX,
-	output  reg [15:0]	o_CamVerY,
-	output  reg [15:0]	o_CamVerZ,
-	output  reg [15:0]	o_CamDc,
-	output  reg [15:0]	o_CosRoll,
-	output  reg [15:0]	o_CosPitch,
-	output  reg [15:0]	o_CosYaw,
-	output  reg [15:0]	o_SenRoll,
-	output  reg [15:0]	o_SenPitch,
-	output  reg [15:0]	o_SenYaw,
-	output  reg [15:0]	o_ScaleX,
-	output  reg [15:0]	o_ScaleY,
-	output  reg [15:0]	o_ScaleZ,
-	output  reg [15:0]	o_TranslX,
-	output  reg [15:0]	o_TranslY,
-	output  reg [15:0]	o_TranslZ,
-	output  reg [15:0]	o_VertexX,
-	output  reg [15:0]	o_VertexY,
-	output  reg [15:0]	o_VertexZ
+output  reg [15:0]	o_CamVerX, o_CamVerY, o_CamVerZ,
+output  reg [15:0]	o_CamDc,
+output  reg [15:0]	o_CosRoll, o_CosPitch, o_CosYaw,
+output  reg [15:0]	o_SenRoll, o_SenPitch,o_SenYaw,
+output  reg [15:0]	o_ScaleX, o_ScaleY, o_ScaleZ,
+output  reg [15:0]	o_TranslX, o_TranslY, o_TranslZ,
+output  reg [15:0]	o_VertexX, o_VertexY, o_VertexZ
 );
 
-initial 
-
-	begin
+initial begin
 		#1
 /*	params = 't_x': -7.6, 't_y': -3.5, 't_z': 25,
 		  	'cos_pitch': 1, 'cos_yaw': 0.5, 'cos_roll': 0.5,
@@ -45,7 +31,7 @@ initial
 	o_SenPitch	=	16'b0000000000000000;
 	o_SenYaw	=	16'b0011101011101101;
 
-	o_ScaleX	= 	16'b1100001110000000;
+	o_ScaleX	= 	16'b0100101100000000;
 	o_ScaleY	=	16'b0100101100000000;
 	o_ScaleZ	=	16'b1100001100000000;
 
@@ -53,7 +39,7 @@ initial
 	o_CamVerY	=	16'b0100010000000000;
 	o_CamVerZ	= 	16'b1100100000000000;
 
-	o_VertexX	=	16'b1100110101000000;
+	o_VertexX	=	16'b0100011110000000;
 	o_VertexY	=	16'b0100011110000000;
 	o_VertexZ	=	16'b1100010100000000;
 

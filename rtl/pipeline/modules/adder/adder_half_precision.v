@@ -3,18 +3,17 @@
 // File Name	: adderhalfprecision.v
 // Coder		: Badilla
 //-----------------------------------------------------
-module adderhalfprecision
-(
-output reg [15:0]  o_Sum,		// Output of the sum.
+module adderhalfprecision(
+output reg [15:0]  	o_Sum,		// Output of the sum.
 input wire [15:0]   i_Addend1,	//Input Addend 1.
 input wire [15:0]   i_Addend2	//Input Addend 2.
 );
-	initial 
+/*	initial 
 	begin
-		$dumpfile ("signals.vcd");
+		$dumpfile ("signals_adder.vcd");
 		$dumpvars;
 	end
-
+*/
 //Internal Variables
 reg[15:0] r_higher_addend	;
 reg[15:0] r_lower_addend	;
