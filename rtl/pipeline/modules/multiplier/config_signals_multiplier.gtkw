@@ -1,0 +1,26 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Fri Jun  9 21:45:17 2017
+[*]
+[dumpfile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/modules/multiplier/signals_multiplier.vcd"
+[dumpfile_mtime] "Fri Jun  9 21:44:13 2017"
+[dumpfile_size] 8401
+[savefile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/modules/multiplier/config_signals_multiplier.gtkw"
+[timestart] 0
+[size] 1385 873
+[pos] -1 -1
+*-4.512242 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] testmultiplier.
+[sst_width] 253
+[signals_width] 165
+[sst_expanded] 1
+[sst_vpaned_height] 254
+@22
+testmultiplier.c1.i_Factor1[15:0]
+testmultiplier.c1.i_Factor2[15:0]
+@28
+testmultiplier.c1.o_Exception
+@22
+testmultiplier.c1.o_Product[15:0]
+[pattern_trace] 1
+[pattern_trace] 0
