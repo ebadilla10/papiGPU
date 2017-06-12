@@ -67,11 +67,11 @@
 #endif
 
 #ifndef GPU_VALID_TAG
-  #define GPU_VALID_TAG   0xCCCC
+  #define GPU_VALID_TAG   0xCCCC //3333
   /**  */
 #endif
 #ifndef CAM_VALID_TAG
-  #define CAM_VALID_TAG   0x3333
+  #define CAM_VALID_TAG   0xBBBB //4444
   /**  */
 #endif
 
@@ -85,6 +85,36 @@
 #endif
 
 #ifndef VRTX_VALID_TAG
-  #define VRTX_VALID_TAG 0x9999
+  #define VRTX_VALID_TAG 0x9999 //6666
   /**  */
+#endif
+
+#ifndef CLS_OBJ_VALID_TAG
+  #define CLS_OBJ_VALID_TAG 0x8888 //7777
+  /**  */
+#endif
+
+#ifndef TMATRIX_VALID_TAG
+  #define TMATRIX_VALID_TAG 0xABCD // 5432
+  /** */
+#endif
+
+#ifndef REFRESH_VALID_TAG
+  #define REFRESH_VALID_TAG 0x1234 // EDCB
+  /** */
+#endif
+
+#ifndef FINAL_BLOCK_VALID_TAG
+  #define FINAL_BLOCK_VALID_TAG 0xFFFF
+  /** */
+#endif
+
+#ifndef ERROR_TAG
+  #define ERROR_TAG 0x1414
+  /** */
+#endif
+
+#ifndef BUSY_TAG
+  #define BUSY_TAG 0x4141
+  /** */
 #endif

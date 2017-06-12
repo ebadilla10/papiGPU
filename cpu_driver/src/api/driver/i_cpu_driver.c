@@ -25,10 +25,7 @@
 /** Memory block description */
 #define INITIAL_BLOCK_BYTE_SIZE (SRAM_ADDRESS_BYTE_SIZE + \
                                  SRAM_ENTRY_BYTE_SIZE)  * \
-                                 INITIAL_BLOCK_SIZE
-
-#define ADDR_ENTRY_BYTE_SIZE    SRAM_ADDRESS_BYTE_SIZE + \
-                                SRAM_ENTRY_BYTE_SIZE
+                                 INITIAL_BLOCK_SIZE + 1
 
 /** Status of the UART filestream */
 int stream_status;
@@ -91,7 +88,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return status;
   }
 
-  uart_options.c_cflag = B9600 | CS8 | CLOCAL | CREAD;
+  uart_options.c_cflag = B921600 | CS8 | CLOCAL | CREAD;
 	uart_options.c_iflag = IGNPAR;
 	uart_options.c_oflag = 0;
 	uart_options.c_lflag = 0;
@@ -188,7 +185,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[block_element * ADDR_ENTRY_BYTE_SIZE],
+  strncpy(&str_to_send[0],
           str_converted,
           sizeof(uint16_t));
 
@@ -202,27 +199,12 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[(block_element * ADDR_ENTRY_BYTE_SIZE) + \
-          SRAM_ADDRESS_BYTE_SIZE],
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
   // Set the number of objects in cero
   block_element++;
-  SRAM_address = NUMB_OBJS_ADDRESS;
-  status = u_half_prec_to_string(SRAM_address, str_converted);
-  if (status){
-    #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "SRAM address to string. Error code: %d\n", status);
-    #endif
-    *state = GPU_ERROR;
-    return status;
-  }
-  strncpy(&str_to_send[block_element * ADDR_ENTRY_BYTE_SIZE],
-          str_converted,
-          sizeof(uint16_t));
-
   SRAM_entry = NO_OBJECTS;
   status = u_half_prec_to_string(SRAM_entry, str_converted);
   if (status){
@@ -233,8 +215,23 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[(block_element * ADDR_ENTRY_BYTE_SIZE) + \
-          SRAM_ADDRESS_BYTE_SIZE],
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Finish the initialization
+  block_element++;
+  SRAM_entry = FINAL_BLOCK_VALID_TAG;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
+    "number of objects to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -252,7 +249,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   }
 
   // Waiting for papiGPU success answer
-  mem_valid_tag = (uint16_t)(~GPU_VALID_TAG);
+  mem_valid_tag = (uint16_t)(REQUEST_VALID_TAG);
   status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
   if (status){
     #ifdef DEBUGLOG
