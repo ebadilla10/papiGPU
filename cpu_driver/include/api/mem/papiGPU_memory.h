@@ -94,27 +94,27 @@
   /**  */
 #endif
 
-#ifdef TMATRIX_VALID_TAG
+#ifndef TMATRIX_VALID_TAG
   #define TMATRIX_VALID_TAG 0xABCD // 5432
   /** */
 #endif
 
-#ifdef REFRESH_VALID_TAG
+#ifndef REFRESH_VALID_TAG
   #define REFRESH_VALID_TAG 0x1234 // EDCB
   /** */
 #endif
 
-#ifdef FINAL_BLOCK_VALID_TAG
+#ifndef FINAL_BLOCK_VALID_TAG
   #define FINAL_BLOCK_VALID_TAG 0xFFFF
   /** */
 #endif
 
-#ifdef ERROR_TAG
+#ifndef ERROR_TAG
   #define ERROR_TAG 0x1414
   /** */
 #endif
 
-#ifdef BUSY_TAG
+#ifndef BUSY_TAG
   #define BUSY_TAG 0x4141
   /** */
 #endif
