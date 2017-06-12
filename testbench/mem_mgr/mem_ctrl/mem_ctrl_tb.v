@@ -6,8 +6,6 @@ module mem_ctrl_tb;
 
 reg clk = 0;
 
-reg rValidReadFlag = 1'b0;
-
 // Inputs from UART
 reg [7:0] iRxByte;
 reg       iRxReady;
@@ -1380,19 +1378,9 @@ end
 
 //////////////////////////////////////
 // Low iValidRead after 2 clock cycles
-always @ ( posedge clk ) begin
-if (iValidRead) begin
-  case (rValidReadFlag)
-
-    1'b0: rValidReadFlag <= 1'b1;
-
-    1'b1: begin
-      iValidRead <= 1'b0;
-      rValidReadFlag <= 1'b0;
-    end // case DOWN
-
-  endcase // rValidReqFlag
-end
+always @ ( posedge iValidRead ) begin
+  #(PERIOD - 2)
+  iValidRead = 1'b0;
 end
 
 endmodule
