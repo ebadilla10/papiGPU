@@ -1,6 +1,6 @@
-`include "../modules/adder/adder_half_precision.v"
-`include "../modules/multiplier/mult_half_precision.v"
-`include "../modules/divider/div_half_precision.v"
+`include "../../../rtl/pipeline/modules/adder/adder_half_precision.v"
+`include "../../../rtl/pipeline/modules/multiplier/mult_half_precision.v"
+`include "../../../rtl/pipeline/modules/divider/div_half_precision.v"
 //-----------------------------------------------------
 // Design Name : graphicspipeline
 // File Name   : graphicspipeline.v
@@ -17,10 +17,7 @@ input  wire [15:0]	i_ScaleX,  i_ScaleY,   i_ScaleZ,
 input  wire [15:0]	i_TranslX, i_TranslY,  i_TranslZ,
 input  wire [15:0]	i_VertexX, i_VertexY,  i_VertexZ
 );
-	initial begin
-		$dumpfile ("signalsgp.vcd");
-		$dumpvars;
-	end
+
 //Internal Variables
 wire [15:0] w_wire1, w_wire2, w_wire3, w_wire4;
 wire [15:0] w_wire5, w_wire6, w_wire7, w_wire8;
@@ -111,6 +108,11 @@ assign Const_neg = 16'b1011110000000000;
 	divhalfprecision dhp1 (.i_Dividend(w_wire52), .i_Divisor(w_wire50),  .o_Quotient(w_wire54), .o_Exception(w_wire_exc_div1));
 	divhalfprecision dhp2 (.i_Dividend(w_wire53), .i_Divisor(w_wire50),  .o_Quotient(w_wire55), .o_Exception(w_wire_exc_div2));
 //---------------------------------------
+	initial begin
+		$dumpfile ("signalsgp.vcd");
+		$dumpvars;
+	end
+
 always @(*)
 	begin
 	o_X = w_wire54;

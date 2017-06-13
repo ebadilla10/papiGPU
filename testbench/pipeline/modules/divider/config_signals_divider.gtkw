@@ -1,34 +1,31 @@
 [*]
 [*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
-[*] Fri Jun  9 21:17:28 2017
+[*] Tue Jun 13 17:15:33 2017
 [*]
-[dumpfile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/modules/divider/signals_divider.vcd"
-[dumpfile_mtime] "Fri Jun  9 21:15:22 2017"
+[dumpfile] "signals_divider.vcd"
+[dumpfile_mtime] "Tue Jun 13 17:15:11 2017"
 [dumpfile_size] 8452
-[savefile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/modules/divider/config_signals_divider.gtkw"
+[savefile] "config_signals_divider.gtkw"
 [timestart] 0
-[size] 1385 873
+[size] 1865 1053
 [pos] -1 -1
 *-4.526287 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-[treeopen] testdivider.
 [sst_width] 253
 [signals_width] 174
 [sst_expanded] 1
-[sst_vpaned_height] 254
+[sst_vpaned_height] 542
 @22
 testdivider.c1.i_Dividend[15:0]
 testdivider.c1.i_Divisor[15:0]
-@800022
+@c00022
 testdivider.c1.o_Quotient[15:0]
 @28
 (0)testdivider.c1.o_Quotient[15:0]
-@29
 (1)testdivider.c1.o_Quotient[15:0]
 (2)testdivider.c1.o_Quotient[15:0]
 (3)testdivider.c1.o_Quotient[15:0]
 (4)testdivider.c1.o_Quotient[15:0]
 (5)testdivider.c1.o_Quotient[15:0]
-@28
 (6)testdivider.c1.o_Quotient[15:0]
 (7)testdivider.c1.o_Quotient[15:0]
 (8)testdivider.c1.o_Quotient[15:0]
@@ -39,7 +36,7 @@ testdivider.c1.o_Quotient[15:0]
 (13)testdivider.c1.o_Quotient[15:0]
 (14)testdivider.c1.o_Quotient[15:0]
 (15)testdivider.c1.o_Quotient[15:0]
-@1001200
+@1401200
 -group_end
 @28
 testdivider.c1.o_Exception
