@@ -1,4 +1,4 @@
-`include "graphics_pipeline.v"
+`include "../../../rtl/pipeline/graphics_pipeline/graphics_pipeline.v"
 module test(
 output  reg [15:0]	o_CamVerX, o_CamVerY, o_CamVerZ,
 output  reg [15:0]	o_CamDc,
@@ -19,6 +19,7 @@ initial begin
 			'X': -21, 'Y': 7.5, 'Z': -5.0,
 			'd_f': 7.0
 */
+//First set:
 	o_TranslX	=	16'b1100011110011001;
 	o_TranslY	=	16'b1100001100000000;
 	o_TranslZ	=	16'b0100111001000000;
@@ -31,7 +32,7 @@ initial begin
 	o_SenPitch	=	16'b0000000000000000;
 	o_SenYaw	=	16'b0011101011101101;
 
-	o_ScaleX	= 	16'b0100101100000000;
+	o_ScaleX	= 	16'b1100001110000000;
 	o_ScaleY	=	16'b0100101100000000;
 	o_ScaleZ	=	16'b1100001100000000;
 
@@ -39,12 +40,13 @@ initial begin
 	o_CamVerY	=	16'b0100010000000000;
 	o_CamVerZ	= 	16'b1100100000000000;
 
-	o_VertexX	=	16'b0100011110000000;
+	o_VertexX	=	16'b1100110101000000;
 	o_VertexY	=	16'b0100011110000000;
 	o_VertexZ	=	16'b1100010100000000;
 
 	o_CamDc		= 	16'b0100011100000000;
 	#5
+//Second set:
 	$finish;
 	end
 graphicspipeline gp1 (
@@ -57,14 +59,3 @@ graphicspipeline gp1 (
 	.i_VertexZ(o_VertexZ)
 	);
 endmodule
-
-
-
-
-
-
-
-
-
-
-

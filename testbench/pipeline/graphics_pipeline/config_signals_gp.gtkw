@@ -1,24 +1,23 @@
 [*]
 [*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
-[*] Fri Jun  9 23:17:10 2017
+[*] Tue Jun 13 05:27:09 2017
 [*]
-[dumpfile] "signalsgp.vcd"
-[dumpfile_mtime] "Fri Jun  9 23:16:16 2017"
-[dumpfile_size] 39687
-[savefile] "config_signals_gp.gtkw"
+[dumpfile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/graphics_pipeline/signalsgp.vcd"
+[dumpfile_mtime] "Tue Jun 13 05:26:49 2017"
+[dumpfile_size] 39705
+[savefile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/graphics_pipeline/config_signals_gp.gtkw"
 [timestart] 0
 [size] 1385 873
 [pos] -1 -1
 *-1.149715 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-[treeopen] test.
 [sst_width] 253
 [signals_width] 129
 [sst_expanded] 1
 [sst_vpaned_height] 254
-@28
-test.gp1.o_Exception
 @22
 test.gp1.o_X[15:0]
 test.gp1.o_Y[15:0]
+@28
+test.gp1.o_Exception
 [pattern_trace] 1
 [pattern_trace] 0
