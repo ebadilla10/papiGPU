@@ -281,6 +281,12 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     return EIO;
   }
 
+  // Release Memory
+  free(str_converted);
+  free(str_to_send);
+  free(str_to_receive);
+  free(str_to_compare);
+
   return status;
 }
 
