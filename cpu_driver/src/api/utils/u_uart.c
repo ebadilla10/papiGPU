@@ -14,8 +14,8 @@ int u_uart_transmitter(int filestream, void *data, int bytesize)
   // Check for valid arguments
   if (0 > filestream){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to send data via " \
-            "UART. Filestream is not valid. Error code: %d\n", filestream);
+      fprintf (stderr, "ERROR: Unable to send data via UART. Filestream " \
+               "is not valid. Error code: %d\n", filestream);
     #endif
     return filestream;
   }
@@ -24,15 +24,15 @@ int u_uart_transmitter(int filestream, void *data, int bytesize)
   status = write(filestream, data, bytesize);
   if (0 > status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to send data via " \
-            "UART. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to send data via UART. " \
+               "Error code: %d\n", status);
     #endif
     return status;
   }
 
   status = 0;
   #ifdef DEBUGLOG
-  printf ("\x1B[33m" "\tSENT data via UART" "\x1B[0m\n");
+    fprintf (stderr, "\tSENT data via UART\n");
   #endif
   return status;
 }
@@ -49,8 +49,8 @@ int u_uart_receiver(int filestream, void *data, int bytesize)
   // Check for valid arguments
   if (0 > filestream){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data via " \
-            "UART. Filestream is not valid. Error code: %d\n", filestream);
+      fprintf (stderr, "ERROR: Unable to receive data via UART. Filestream " \
+               "is not valid. Error code: %d\n", filestream);
     #endif
     return filestream;
   }
@@ -61,13 +61,13 @@ int u_uart_receiver(int filestream, void *data, int bytesize)
 
     if (0 > receiver_status){
       #ifdef DEBUGLOG
-      printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data " \
-              "via UART. Error code: %d\n", receiver_status);
+        fprintf (stderr, "ERROR: Unable to receive data via UART. " \
+                 "Error code: %d\n", receiver_status);
       #endif
       return receiver_status;
     } else if (0 < receiver_status){
       #ifdef DEBUGLOG
-      printf ("\x1B[33m" "\tRECEIVED data via UART" "\x1B[0m\n");
+        fprintf (stderr, "\tRECEIVED data via UART\n");
       #endif
       return status;
     }

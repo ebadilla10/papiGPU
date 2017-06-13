@@ -13,7 +13,7 @@ static void test_papiGPU_initialize(){
   enum papiGPU_states *state_null = NULL;
 
   // Send empty portname
-  printf ("\x1B[36m" "---Send a empty portname---\n");
+  printf ("\x1B[36m" "---Send a empty portname---" "\x1B[0m" "\n");
   status = papiGPU_initialize(empty_portname, state);
 
   if (status == EINVAL && (GPU_ERROR == *state)){
@@ -25,7 +25,7 @@ static void test_papiGPU_initialize(){
   }
 
   // Send an incorrect portname
-  printf ("\x1B[36m" "---Send an incorrect portname---\n");
+  printf ("\x1B[36m" "---Send an incorrect portname---" "\x1B[0m" "\n");
   status = papiGPU_initialize(incorrect_portname, state);
 
   if (status == -EPERM && (GPU_ERROR == *state)){
@@ -37,7 +37,7 @@ static void test_papiGPU_initialize(){
   }
 
   // Send a NULL state pointer with correct portname
-  printf ("\x1B[36m" "---Send a NULL state pointer---\n");
+  printf ("\x1B[36m" "---Send a NULL state pointer---" "\x1B[0m" "\n");
   state_null = NULL;
   status = papiGPU_initialize(correct_portname, state_null);
 
@@ -50,7 +50,7 @@ static void test_papiGPU_initialize(){
   }
 
   // Send correct portname
-  printf ("\x1B[36m" "---Send correct portname---\n");
+  printf ("\x1B[36m" "---Send correct portname---" "\x1B[0m" "\n");
   status = papiGPU_initialize(correct_portname, state);
 
   if ((0 == status) && (GPU_INITIALIZED == *state)){

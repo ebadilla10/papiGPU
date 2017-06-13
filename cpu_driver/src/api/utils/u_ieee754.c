@@ -28,8 +28,8 @@ int u_float_to_half_prec(float     simple_precision,
 {
   // Check the max valid valid of simple precision
   if (simple_precision > MAX_HALF_PRECISION) {
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The simple precision value is " \
-            "greater than %.2f\n", MAX_HALF_PRECISION);
+    fprintf (stderr, "ERROR: The simple precision value is greater " \
+             "than %.2f\n", MAX_HALF_PRECISION);
     return EINVAL;
   }
 

@@ -56,9 +56,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   // Check if pre-states is allowed
   if (!((1 << *state) & INITIALIZED_PS)){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to initialize the " \
-            "GPU. Check it is not already initialized. Error code: " \
-            "%d\n", EPERM);
+      fprintf (stderr, "ERROR: Unable to initialize the GPU. Check it is " \
+               "not already initialized. Error code: %d\n", EPERM);
     #endif
     // No change the state
     return EPERM;
@@ -69,9 +68,9 @@ int i_papiGPU_initialize(gpu_portname         portname[],
 
   if (0 > stream_status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to open UART. " \
-            "Ensure device is connected or it is not in use by " \
-            "another application. Error code: %d\n", stream_status);
+      fprintf (stderr, "ERROR: Unable to open UART. Ensure device is " \
+               "connected or it is not in use by another application. " \
+               "Error code: %d\n", stream_status);
     #endif
     *state = GPU_ERROR;
     return stream_status;
@@ -81,8 +80,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = tcgetattr(stream_status, &uart_options);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to get the parameters " \
-            "associated with the terminal. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to get the parameters associated " \
+               "with the terminal. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -96,8 +95,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = tcflush(stream_status, TCIOFLUSH);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to set the flash " \
-            "the output/input data. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to set the flash the output/input " \
+               "data. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -106,8 +105,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = tcsetattr(stream_status, TCSANOW, &uart_options);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to set the parameters " \
-            "associated with the terminal. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to set the parameters associated " \
+               "with the terminal. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -118,8 +117,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(mem_valid_tag, str_to_send);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-            "request valid tag to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the request valid tag " \
+               "to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -130,8 +129,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
                               SRAM_TAG_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to transmit data " \
-            "using UART. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -142,8 +141,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "approval valid tag to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the approval valid tag " \
+               "to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -154,8 +153,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
                            SRAM_TAG_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data " \
-            "using UART. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -164,8 +163,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = memcmp(str_to_compare, str_to_receive, SRAM_TAG_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "UART approval tag is not " \
-            "valid. Error code: %d\n", EIO);
+      fprintf (stderr, "ERROR: UART approval tag is not valid. " \
+               "Error code: %d\n", EIO);
     #endif
     *state = GPU_ERROR;
     return EIO;
@@ -179,8 +178,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(SRAM_address, str_converted);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "initial papiGPU address to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the initial papiGPU " \
+               "address to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -193,8 +192,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(SRAM_entry, str_converted);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "papiGPU valid tag to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the papiGPU valid tag " \
+               "to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -209,8 +208,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(SRAM_entry, str_converted);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "number of objects to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the number of objects " \
+               "to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -225,8 +224,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(SRAM_entry, str_converted);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "number of objects to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the number of objects " \
+               "to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -241,8 +240,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
                               INITIAL_BLOCK_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to transmit data " \
-            "using UART. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -253,8 +252,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to convert the " \
-    "approval valid tag to string. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to convert the approval valid tag " \
+               "to string. Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -265,8 +264,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
                            SRAM_TAG_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to receive data " \
-            "using UART. Error code: %d\n", status);
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
     #endif
     *state = GPU_ERROR;
     return status;
@@ -275,8 +274,8 @@ int i_papiGPU_initialize(gpu_portname         portname[],
   status = memcmp(str_to_compare, str_to_receive, SRAM_TAG_BYTE_SIZE);
   if (status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Unable to format the SRAM of "\
-            "the papiGPU. Error code: %d\n", EIO);
+      fprintf (stderr, "ERROR: Unable to format the SRAM of the papiGPU. " \
+               "Error code: %d\n", EIO);
     #endif
     *state = GPU_ERROR;
     return EIO;
