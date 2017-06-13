@@ -1,19 +1,19 @@
 [*]
 [*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
-[*] Tue Jun 13 04:20:07 2017
+[*] Tue Jun 13 17:15:33 2017
 [*]
-[dumpfile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/modules/divider/signals_divider.vcd"
-[dumpfile_mtime] "Tue Jun 13 04:19:44 2017"
+[dumpfile] "signals_divider.vcd"
+[dumpfile_mtime] "Tue Jun 13 17:15:11 2017"
 [dumpfile_size] 8452
-[savefile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/modules/divider/config_signals_divider.gtkw"
+[savefile] "config_signals_divider.gtkw"
 [timestart] 0
-[size] 1385 873
+[size] 1865 1053
 [pos] -1 -1
 *-4.526287 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [sst_width] 253
 [signals_width] 174
 [sst_expanded] 1
-[sst_vpaned_height] 254
+[sst_vpaned_height] 542
 @22
 testdivider.c1.i_Dividend[15:0]
 testdivider.c1.i_Divisor[15:0]

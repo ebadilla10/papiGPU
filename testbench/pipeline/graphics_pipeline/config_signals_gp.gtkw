@@ -2,10 +2,10 @@
 [*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
 [*] Tue Jun 13 05:27:09 2017
 [*]
-[dumpfile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/graphics_pipeline/signalsgp.vcd"
+[dumpfile] "signalsgp.vcd"
 [dumpfile_mtime] "Tue Jun 13 05:26:49 2017"
 [dumpfile_size] 39705
-[savefile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/graphics_pipeline/config_signals_gp.gtkw"
+[savefile] "config_signals_gp.gtkw"
 [timestart] 0
 [size] 1385 873
 [pos] -1 -1
