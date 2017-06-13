@@ -1,4 +1,4 @@
-`include "adder_half_precision.v"
+`include "../../../../rtl/pipeline/modules/adder/adder_half_precision.v"
 module testadder(
 	output reg [15:0] testintnum1,
 	output reg [15:0] testintnum2,

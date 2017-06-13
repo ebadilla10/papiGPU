@@ -1,16 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
-[*] Fri Jun  9 22:45:42 2017
+[*] Tue Jun 13 04:21:36 2017
 [*]
-[dumpfile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/modules/adder/signals_adder.vcd"
-[dumpfile_mtime] "Fri Jun  9 22:45:17 2017"
+[dumpfile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/modules/adder/signals_adder.vcd"
+[dumpfile_mtime] "Tue Jun 13 04:21:26 2017"
 [dumpfile_size] 10256
-[savefile] "/home/ebadilla10/Desktop/papiGPU/rtl/pipeline/modules/adder/config_signals_adder.gtkw"
+[savefile] "/home/ebadilla10/Desktop/repos/papiGPU/testbench/pipeline/modules/adder/config_signals_adder.gtkw"
 [timestart] 0
 [size] 1385 873
-[pos] -386 -242
+[pos] -1 -1
 *-4.512242 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-[treeopen] testadder.
 [sst_width] 253
 [signals_width] 165
 [sst_expanded] 1

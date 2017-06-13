@@ -1,8 +1,8 @@
-`include "div_half_precision.v"
-module testdivider(
+`include "../../../../rtl/pipeline/modules/multiplier/mult_half_precision.v"
+module testmultiplier(
 	output reg [15:0] testintnum1,
 	output reg [15:0] testintnum2,
-	input  wire[15:0] resultdivider,
+	input  wire[15:0] resultmultiplier,
 	input  wire 	  exception
 );
 real exp1, exp2, S1, S2, float1, float2;
@@ -27,24 +27,22 @@ initial begin
 		float1 = (S1)*(2.0**(exp1))*(1.0+float1);
 		float2 = (S2)*(2.0**(exp2))*(1.0+float2);
 #1
-		Sresult = (-1.0)**(resultdivider[15]);
-		expresult = resultdivider[14:10]-15.0;
+		Sresult = (-1.0)**(resultmultiplier[15]);
+		expresult = resultmultiplier[14:10]-15.0;
 		for(i=1; i<10; i=i+1) begin
-		if(resultdivider[i]==1'b1)
+		if(resultmultiplier[i]==1'b1)
 			result = result + 2.0**(-1.0*((10.0-i)));
 		end
 		result = (Sresult)*(2.0**(expresult))*(1.0+result);
-		porcentaje = (float1/float2-result)/(float1/float2)*100;
+		porcentaje = (float1*float2-result)/(float1*float2)*100;
 		$display("%f\t",float1, "%f\t", float2,"%f\t", result, "%f %%\t",porcentaje, "%b",exception);
 	end
 		#5 $finish;
 	end
-
-divhalfprecision c1 (
-.i_Dividend(testintnum1),  
-.i_Divisor(testintnum2),
-.o_Quotient(resultdivider),
+multhalfprecision c1 (
+.i_Factor1(testintnum1),  
+.i_Factor2(testintnum2),
+.o_Product(resultmultiplier),
 .o_Exception(exception)
 );
-
 endmodule

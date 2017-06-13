@@ -9,7 +9,7 @@ DEBUG = -o
 TARGET = testadder.o
 TARGET1 = config_signals_adder.gtkw
 
-all:	$(TARGET)
+all:   $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) $(DEBUG) $(TARGET)
