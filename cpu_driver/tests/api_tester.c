@@ -28,6 +28,12 @@ static void test_papiGPU(){
                               .ty = 0.0,
                               .tz = 0.0};
 
+  struct papiGPU_vertex vertex[2] =
+  {
+    {.x = 1.0, .y = 1.0, .z = 1.0},
+    {.x = 1.5, .y = 1.50, .z = 1.5}
+  };
+
   // Send empty portname
   printf ("\x1B[36m" "---Send a empty portname---" "\x1B[0m" "\n");
   status = papiGPU_initialize(empty_portname, state);
@@ -97,14 +103,30 @@ static void test_papiGPU(){
                                  translation,
                                  &object_id,
                                  state);
-                                 
+
   if ((0 == status) && (GPU_OBJECT_CREATED == *state)){
     printf("[\x1B[32m" "PASSED" "\x1B[0m" "] papiGPU object creation " \
            "successfully completed\n");
   } else {
     printf("[\x1B[31m" "FAILED" "\x1B[0m" "] papiGPU object creation failed. " \
            "\n");
-   }
+  }
+
+  // Insert GPU vertices
+  printf ("\x1B[36m" "---Insert vertices---" "\x1B[0m" "\n");
+
+  status = papiGPU_insert_vertices(object_id,
+                                   vertex,
+                                   state);
+
+  if ((0 == status) && (GPU_VERTEX_INSERTED == *state)){
+    printf("[\x1B[32m" "PASSED" "\x1B[0m" "] papiGPU vertices insertion " \
+           "successfully completed\n");
+  } else {
+    printf("[\x1B[31m" "FAILED" "\x1B[0m" "] papiGPU vertices insertion failed. " \
+           "\n");
+  }
+
 }
 
 
