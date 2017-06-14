@@ -15,8 +15,7 @@
 #define CAMERA_CREATE_PS      1 << GPU_INITIALIZED
 #define OBJECT_CREATE_PS      1 << GPU_CAMERA_CREATED  | \
                               1 << GPU_OBJECT_CLOSED
-#define VERTEX_INSERT_PS      1 << GPU_OBJECT_CREATED  | \
-                              1 << GPU_VERTEX_INSERTED
+#define VERTEX_INSERT_PS      1 << GPU_OBJECT_CREATED
 #define OBJECT_CLOSE_PS       1 << GPU_VERTEX_INSERTED
 #define OBJ_TMATRIX_CHANGE_PS 1 << GPU_OBJECT_CREATED  | \
                               1 << GPU_VERTEX_INSERTED | \
@@ -40,6 +39,9 @@
 
 /** Baud Rate for UART (bit/s) */
 #define UART_BAUD_RATE B921600
+
+/**  Numner of element of an array*/
+#define NUM_ELEMS(x)  (sizeof(*x) / sizeof(x[0]))
 
 /** Status of the UART filestream */
 int stream_status;
@@ -958,6 +960,278 @@ int i_papiGPU_create_object(bool                          enable,
   if (status){
     #ifdef DEBUGLOG
       fprintf (stderr, "ERROR: Unable to create a object of the papiGPU. " \
+               "Error code: %d\n", EIO);
+    #endif
+    *state = GPU_ERROR;
+    return EIO;
+  }
+
+  // Release Memory
+  free(str_converted);
+  free(str_to_send);
+  free(str_to_receive);
+  free(str_to_compare);
+
+  return status;
+}
+
+
+/**
+ * Insert an array of verteces in open object
+ */
+int i_papiGPU_insert_vertices(gpu_object_id          object_id,
+                              struct papiGPU_vertex  vertex[],
+                              enum papiGPU_states   *state)
+{
+  int status = 0;
+  uint16_t mem_valid_tag = 0;
+  unsigned char *str_converted;
+  unsigned char *str_to_send;
+  unsigned char *str_to_receive;
+  unsigned char *str_to_compare;
+  uint16_t SRAM_address = 0;
+  uint16_t SRAM_entry = 0;
+  uint16_t block_element = 0;
+
+  int num_vrtcs = 2; // NUM_ELEMS(vertex);
+  // TODO: No magic numbers to VTX BURST
+  int vtx_burst_byte_size = (6 * num_vrtcs) + 6 + 2;
+  int vtx_address = 0;
+
+  str_converted = (char *) malloc(sizeof(uint16_t));
+  str_to_send = (char *) malloc(sizeof(uint16_t));
+  str_to_receive = (char *) malloc(sizeof(uint16_t));
+  str_to_compare = (char *) malloc(sizeof(uint16_t));
+
+  // Check if pre-states is allowed
+  if (!((1 << *state) & VERTEX_INSERT_PS)){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to insert vertices. Check papiGPU " \
+               "is already initialized. Error code: %d\n", EPERM);
+    #endif
+    // No change the state
+    return EPERM;
+  }
+
+  // Request the papiGPU insert vertices
+  mem_valid_tag = VRTX_VALID_TAG;
+  status = u_half_prec_to_string(mem_valid_tag, str_to_send);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert vertex request valid " \
+               "tag to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_transmitter(stream_status,
+                              (void*) str_to_send,
+                              TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  // Waiting for papiGPU vertices insert approval
+  mem_valid_tag = (uint16_t) ~(VRTX_VALID_TAG);
+  status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the vertex valid tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_receiver(stream_status,
+                           (void*) str_to_receive,
+                           TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = memcmp(str_to_compare, str_to_receive, TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Vertex approval tag is not valid. " \
+               "Error code: %d\n", EIO);
+    #endif
+    *state = GPU_ERROR;
+    return EIO;
+  }
+
+  // Configure the vertices burst
+
+  free(str_to_send);
+  str_to_send = (char *) malloc(vtx_burst_byte_size);
+  vtx_address = object_id + TO_INIT_VERTEX_BLOCK_SIZE;
+
+  // Set number of vertices, vertices initial address and vertex valid tag
+
+  SRAM_entry = (uint16_t) num_vrtcs;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the vertices " \
+               "number to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[0],
+          str_converted,
+          sizeof(uint16_t));
+
+  SRAM_address = (uint16_t) vtx_address;
+  status = u_half_prec_to_string(SRAM_address, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the vertex " \
+               "address to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+          str_converted,
+          sizeof(uint16_t));
+
+  block_element++;
+  SRAM_entry = (uint16_t) VRTX_VALID_TAG;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the vertices valid tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Set the vertices
+  for (int vtx_counter = 0; vtx_counter < num_vrtcs; vtx_counter++){
+
+    block_element++;
+    status = u_float_to_half_prec(vertex[vtx_counter].x,
+                                  &SRAM_entry,
+                                  str_converted);
+    if (status){
+      #ifdef DEBUGLOG
+        fprintf (stderr, "ERROR: Unable to convert vertex X " \
+                 "to string. Error code: %d\n", status);
+      #endif
+      *state = GPU_ERROR;
+      return status;
+    }
+    strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+            str_converted,
+            sizeof(uint16_t));
+
+    block_element++;
+    status = u_float_to_half_prec(vertex[vtx_counter].y,
+                                  &SRAM_entry,
+                                  str_converted);
+    if (status){
+      #ifdef DEBUGLOG
+        fprintf (stderr, "ERROR: Unable to convert vertex Y " \
+                 "to string. Error code: %d\n", status);
+      #endif
+      *state = GPU_ERROR;
+      return status;
+    }
+    strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+            str_converted,
+            sizeof(uint16_t));
+
+    block_element++;
+    status = u_float_to_half_prec(vertex[vtx_counter].z,
+                                  &SRAM_entry,
+                                  str_converted);
+    if (status){
+      #ifdef DEBUGLOG
+        fprintf (stderr, "ERROR: Unable to convert vertex Z " \
+                 "to string. Error code: %d\n", status);
+      #endif
+      *state = GPU_ERROR;
+      return status;
+    }
+    strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+            str_converted,
+            sizeof(uint16_t));
+
+  }
+
+  // Finish the object creation
+  block_element++;
+  SRAM_entry = FINAL_BLOCK_VALID_TAG;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the final tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Sending object burst to SRAM
+  status = u_uart_transmitter(stream_status,
+                              (void*) str_to_send,
+                              vtx_burst_byte_size);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  // Waiting for papiGPU success answer
+  mem_valid_tag = VRTX_VALID_TAG;
+  status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the vertex valid tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_receiver(stream_status,
+                           (void*) str_to_receive,
+                           TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = memcmp(str_to_compare, str_to_receive, TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to create vertices of the papiGPU. " \
                "Error code: %d\n", EIO);
     #endif
     *state = GPU_ERROR;
