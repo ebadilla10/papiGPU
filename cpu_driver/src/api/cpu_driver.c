@@ -89,6 +89,9 @@ int papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
   return status;
 }
 
+/**
+ * Create an object and keep it open
+ */
 int papiGPU_create_object(bool                          enable,
                           struct papiGPU_rotate_angles  rota_angles,
                           struct papiGPU_scales         scales,
@@ -96,8 +99,40 @@ int papiGPU_create_object(bool                          enable,
                           gpu_object_id                *object_id,
                           enum papiGPU_states          *state)
 {
-  fprintf (stderr, "ERROR: Function not implemented\n");
-  return EPERM;
+  int status = 0;
+
+  // Check for valid arguments
+  if (NULL == state){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  if (NULL == object_id){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The object ID pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  status = i_papiGPU_create_object(enable,
+                                 rota_angles,
+                                 scales,
+                                 translation,
+                                 object_id,
+                                 state);
+
+  if (!status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "INFO: The object was created.\n");
+    #endif
+    *state = GPU_OBJECT_CREATED;
+  }
+
+  return status;
 }
 
 /**
