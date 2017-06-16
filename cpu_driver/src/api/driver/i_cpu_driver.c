@@ -14,13 +14,16 @@
 #define INITIALIZED_PS        1 << GPU_ERROR
 #define CAMERA_CREATE_PS      1 << GPU_INITIALIZED
 #define OBJECT_CREATE_PS      1 << GPU_CAMERA_CREATED  | \
-                              1 << GPU_OBJECT_CLOSED
+                              1 << GPU_OBJECT_CLOSED   | \
+                              1 << GPU_REFRESHED
 #define VERTEX_INSERT_PS      1 << GPU_OBJECT_CREATED
 #define OBJECT_CLOSE_PS       1 << GPU_VERTEX_INSERTED
 #define OBJ_TMATRIX_CHANGE_PS 1 << GPU_OBJECT_CREATED  | \
                               1 << GPU_VERTEX_INSERTED | \
-                              1 << GPU_OBJECT_CLOSED
-#define REFRESH_PS            1 << GPU_OBJECT_CLOSED
+                              1 << GPU_OBJECT_CLOSED   | \
+                              1 << GPU_REFRESHED
+#define REFRESH_PS            1 << GPU_OBJECT_CLOSED   | \
+                              1 << GPU_OBJ_TMATRIX_CHANGED
 
 #define NO_OBJECTS 0x0000
 
@@ -1444,6 +1447,103 @@ int i_papiGPU_close_object(gpu_object_id        object_id,
   return status;
 }
 
+
+/**
+ * Refresh the all parameter in papiGPU
+ */
+int i_papiGPU_refresh(enum papiGPU_states *state)
+{
+  int status = 0;
+  uint16_t mem_valid_tag = 0;
+  unsigned char *str_converted;
+  unsigned char *str_to_send;
+  unsigned char *str_to_receive;
+  unsigned char *str_to_compare;
+  uint16_t SRAM_address = 0;
+  uint16_t SRAM_entry = 0;
+  uint16_t block_element = 0;
+
+  str_converted = (char *) malloc(sizeof(uint16_t));
+  str_to_send = (char *) malloc(sizeof(uint16_t));
+  str_to_receive = (char *) malloc(sizeof(uint16_t));
+  str_to_compare = (char *) malloc(sizeof(uint16_t));
+
+  // Check if pre-states is allowed
+  if (!((1 << *state) & REFRESH_PS)){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to Refresh. Check papiGPU " \
+               "is already initialized. Error code: %d\n", EPERM);
+    #endif
+    // No change the state
+    return EPERM;
+  }
+
+  // Request the papiGPU refresh
+  mem_valid_tag = REFRESH_VALID_TAG;
+  status = u_half_prec_to_string(mem_valid_tag, str_to_send);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert refresh request valid " \
+               "tag to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_transmitter(stream_status,
+                              (void*) str_to_send,
+                              TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  // Waiting for papiGPU refresh approval
+  mem_valid_tag = (uint16_t) (REFRESH_VALID_TAG);
+  status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the refresh tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_receiver(stream_status,
+                           (void*) str_to_receive,
+                           TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = memcmp(str_to_compare, str_to_receive, TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: refresh approval tag is not valid. " \
+               "Error code: %d\n", EIO);
+    #endif
+    *state = GPU_ERROR;
+    return EIO;
+  }
+
+  // Release Memory
+  free(str_converted);
+  free(str_to_send);
+  free(str_to_receive);
+  free(str_to_compare);
+
+  return status;
+}
 
 /*
 
