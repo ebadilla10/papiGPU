@@ -37,6 +37,9 @@
                                (SRAM_ENTRY_BYTE_SIZE  * \
                                TO_INIT_VERTEX_BLOCK_SIZE) + 2
 
+#define CLS_OBJ_BURST_BYTE_SIZE SRAM_ADDRESS_BYTE_SIZE + \
+                                SRAM_ENTRY_BYTE_SIZE + 2
+
 /** Baud Rate for UART (bit/s) */
 #define UART_BAUD_RATE B921600
 
@@ -995,6 +998,9 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
   int vtx_burst_byte_size = (6 * num_vtx) + 6 + 2;
   int vtx_address = 0;
 
+  // Set the address to next object
+  next_object_address += TO_INIT_VERTEX_BLOCK_SIZE + (3 * num_vtx);
+
   str_converted = (char *) malloc(sizeof(uint16_t));
   str_to_send = (char *) malloc(sizeof(uint16_t));
   str_to_receive = (char *) malloc(sizeof(uint16_t));
@@ -1229,6 +1235,200 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
   if (status){
     #ifdef DEBUGLOG
       fprintf (stderr, "ERROR: Unable to create vertices of the papiGPU. " \
+               "Error code: %d\n", EIO);
+    #endif
+    *state = GPU_ERROR;
+    return EIO;
+  }
+
+  // Release Memory
+  free(str_converted);
+  free(str_to_send);
+  free(str_to_receive);
+  free(str_to_compare);
+
+  return status;
+}
+
+
+/**
+ * Close the object
+ */
+int i_papiGPU_close_object(gpu_object_id        object_id,
+                           enum papiGPU_states *state)
+{
+  int status = 0;
+  uint16_t mem_valid_tag = 0;
+  unsigned char *str_converted;
+  unsigned char *str_to_send;
+  unsigned char *str_to_receive;
+  unsigned char *str_to_compare;
+  uint16_t SRAM_address = 0;
+  uint16_t SRAM_entry = 0;
+  uint16_t block_element = 0;
+
+  str_converted = (char *) malloc(sizeof(uint16_t));
+  str_to_send = (char *) malloc(sizeof(uint16_t));
+  str_to_receive = (char *) malloc(sizeof(uint16_t));
+  str_to_compare = (char *) malloc(sizeof(uint16_t));
+
+  // Check if pre-states is allowed
+  if (!((1 << *state) & OBJECT_CLOSE_PS)){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to close object. Check object " \
+               "is created. Error code: %d\n", EPERM);
+    #endif
+    // No change the state
+    return EPERM;
+  }
+
+  // Request the papiGPU close object
+  mem_valid_tag = CLS_OBJ_VALID_TAG;
+  status = u_half_prec_to_string(mem_valid_tag, str_to_send);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert close object request valid " \
+               "tag to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_transmitter(stream_status,
+                              (void*) str_to_send,
+                              TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  // Waiting for papiGPU close object approval
+  mem_valid_tag = (uint16_t) ~(CLS_OBJ_VALID_TAG);
+  status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
+  if (status){
+   #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the close object tag " \
+               "to string. Error code: %d\n", status);
+   #endif
+   *state = GPU_ERROR;
+   return status;
+  }
+
+  status = u_uart_receiver(stream_status,
+                           (void*) str_to_receive,
+                           TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = memcmp(str_to_compare, str_to_receive, TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: close object approval tag is not valid. " \
+               "Error code: %d\n", EIO);
+    #endif
+    *state = GPU_ERROR;
+    return EIO;
+  }
+
+  // Configure the close object burst
+  free(str_to_send);
+  str_to_send = (char *) malloc(CLS_OBJ_BURST_BYTE_SIZE);
+
+  SRAM_address = (uint16_t) (object_id + 1);
+  status = u_half_prec_to_string(SRAM_address, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the object " \
+               "address to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[0],
+          str_converted,
+          sizeof(uint16_t));
+
+  SRAM_address = (uint16_t) (next_object_address);
+  status = u_half_prec_to_string(SRAM_address, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the next object " \
+               "address to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Finish the object creation
+  block_element++;
+  SRAM_entry = FINAL_BLOCK_VALID_TAG;
+  status = u_half_prec_to_string(SRAM_entry, str_converted);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the final tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+          str_converted,
+          sizeof(uint16_t));
+
+  // Sending close object burst to SRAM
+  status = u_uart_transmitter(stream_status,
+                              (void*) str_to_send,
+                              CLS_OBJ_BURST_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to transmit data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  // Waiting for papiGPU success answer
+  mem_valid_tag = CLS_OBJ_VALID_TAG;
+  status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to convert the object valid tag " \
+               "to string. Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = u_uart_receiver(stream_status,
+                           (void*) str_to_receive,
+                           TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to receive data using UART. " \
+               "Error code: %d\n", status);
+    #endif
+    *state = GPU_ERROR;
+    return status;
+  }
+
+  status = memcmp(str_to_compare, str_to_receive, TAG_BYTE_SIZE);
+  if (status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Unable to close a object of the papiGPU. " \
                "Error code: %d\n", EIO);
     #endif
     *state = GPU_ERROR;
