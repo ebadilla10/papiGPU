@@ -128,6 +128,33 @@ static void test_papiGPU(){
            "\n");
   }
 
+  // Close GPU object
+  printf ("\x1B[36m" "---Close object---" "\x1B[0m" "\n");
+
+  status = papiGPU_close_object(object_id,
+                                state);
+
+  if ((0 == status) && (GPU_OBJECT_CLOSED == *state)){
+    printf("[\x1B[32m" "PASSED" "\x1B[0m" "] papiGPU close object " \
+           "successfully completed\n");
+  } else {
+    printf("[\x1B[31m" "FAILED" "\x1B[0m" "] papiGPU close object failed. " \
+           "\n");
+  }
+
+  // Refresh GPU object
+  printf ("\x1B[36m" "---Refresh GPU---" "\x1B[0m" "\n");
+
+  status = papiGPU_refresh(state);
+
+  if ((0 == status) && (GPU_REFRESHED == *state)){
+    printf("[\x1B[32m" "PASSED" "\x1B[0m" "] papiGPU refresh " \
+           "successfully completed\n");
+  } else {
+    printf("[\x1B[31m" "FAILED" "\x1B[0m" "] papiGPU refresh failed. " \
+           "\n");
+  }
+
 }
 
 
