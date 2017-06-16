@@ -40,9 +40,6 @@
 /** Baud Rate for UART (bit/s) */
 #define UART_BAUD_RATE B921600
 
-/**  Numner of element of an array*/
-#define NUM_ELEMS(x)  (sizeof(*x) / sizeof(x[0]))
-
 /** Status of the UART filestream */
 int stream_status;
 
@@ -980,6 +977,7 @@ int i_papiGPU_create_object(bool                          enable,
  * Insert an array of verteces in open object
  */
 int i_papiGPU_insert_vertices(gpu_object_id          object_id,
+                              int                    num_vtx,
                               struct papiGPU_vertex  vertex[],
                               enum papiGPU_states   *state)
 {
@@ -993,9 +991,8 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
   uint16_t SRAM_entry = 0;
   uint16_t block_element = 0;
 
-  int num_vrtcs = 2; // NUM_ELEMS(vertex);
   // TODO: No magic numbers to VTX BURST
-  int vtx_burst_byte_size = (6 * num_vrtcs) + 6 + 2;
+  int vtx_burst_byte_size = (6 * num_vtx) + 6 + 2;
   int vtx_address = 0;
 
   str_converted = (char *) malloc(sizeof(uint16_t));
@@ -1079,7 +1076,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
 
   // Set number of vertices, vertices initial address and vertex valid tag
 
-  SRAM_entry = (uint16_t) num_vrtcs;
+  SRAM_entry = (uint16_t) num_vtx;
   status = u_half_prec_to_string(SRAM_entry, str_converted);
   if (status){
     #ifdef DEBUGLOG
@@ -1123,7 +1120,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
           sizeof(uint16_t));
 
   // Set the vertices
-  for (int vtx_counter = 0; vtx_counter < num_vrtcs; vtx_counter++){
+  for (int vtx_counter = 0; vtx_counter < num_vtx; vtx_counter++){
 
     block_element++;
     status = u_float_to_half_prec(vertex[vtx_counter].x,

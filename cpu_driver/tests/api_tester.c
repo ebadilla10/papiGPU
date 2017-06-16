@@ -116,6 +116,7 @@ static void test_papiGPU(){
   printf ("\x1B[36m" "---Insert vertices---" "\x1B[0m" "\n");
 
   status = papiGPU_insert_vertices(object_id,
+                                   2,
                                    vertex,
                                    state);
 

@@ -100,12 +100,14 @@ int papiGPU_create_object(bool                          enable,
  * Insert an array of verteces in open object
  *
  * @param[in]   object_id is the open object ID
+ * @param[in]   num_vtx   is the number of vertices
  * @param[in]   vertex[]  are the vertex values
  * @param[out] *state     is the papiGPU general state
  * @return      0         if function was succesful
  *              errno     if function failed
  */
 int papiGPU_insert_vertices(gpu_object_id          object_id,
+                            int                    num_vtx,
                             struct papiGPU_vertex  vertex[],
                             enum papiGPU_states   *state);
 

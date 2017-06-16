@@ -139,6 +139,7 @@ int papiGPU_create_object(bool                          enable,
  * Insert an array of verteces in open object
  */
 int papiGPU_insert_vertices(gpu_object_id          object_id,
+                            int                    num_vtx,
                             struct papiGPU_vertex  vertex[],
                             enum papiGPU_states   *state)
 {
@@ -154,6 +155,7 @@ int papiGPU_insert_vertices(gpu_object_id          object_id,
   }
 
   status = i_papiGPU_insert_vertices(object_id,
+                                     num_vtx,
                                      vertex,
                                      state);
 
