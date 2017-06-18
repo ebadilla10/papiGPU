@@ -30,8 +30,8 @@ module uart_ctrl(
 	output reg [7:0] oRxByte,
 	output reg oRxReady,
 	output reg oRxError,
-	output reg oTxSent,
-	output reg oTx
+	output reg oTxSent = 1'b0,
+	output reg oTx = 1'b1
     );
 
 	parameter CLOCK_RATE = 32000000; //32MHz
@@ -58,13 +58,13 @@ module uart_ctrl(
 	reg [2:0] bit_counter; //Number of bits received
 	reg [BITS_SAMPLE-1:0] sample_counter; //Clock counter to determine sample count
 
-	reg [2:0] rx_state;
+	reg [2:0] rx_state = IDLE;
 
-	reg rx_1; //Output of first stage sync
-	reg rx_bit; //Synced iRx
+	reg rx_1 = 1'b1; //Output of first stage sync
+	reg rx_bit = 1'b1; //Synced iRx
 	wire rx_edge; //Flag change of iRx to adjust timer
 
-	reg [2:0] tx_state;
+	reg [2:0] tx_state = IDLE;
 	reg tx_ready_held;
 	reg [7:0] tx_copy;
 	reg [2:0] tx_bit_counter; //Number of bits sent
