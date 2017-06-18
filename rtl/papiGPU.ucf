@@ -69,9 +69,9 @@ NET oTx             LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | PULLUP
 #NET SWITCH(5)      LOC="P119" | IOSTANDARD=LVTTL;                                # C5
 #NET SWITCH(6)      LOC="P120" | IOSTANDARD=LVTTL;                                # C6
 #NET SWITCH(7)      LOC="P121" | IOSTANDARD=LVTTL;                                # C7
-#NET LED(0)         LOC="P123" | IOSTANDARD=LVTTL;                                # C8
-#NET LED(1)         LOC="P124" | IOSTANDARD=LVTTL;                                # C9
-#NET LED(2)         LOC="P126" | IOSTANDARD=LVTTL;                                # C10
+NET oRegToPinWRITE  LOC="P123" | IOSTANDARD=LVTTL;                                # C8
+NET oRegToPinREAD   LOC="P124" | IOSTANDARD=LVTTL;                                # C9
+NET LED_debug       LOC="P126" | IOSTANDARD=LVTTL;                                # C10
 #NET LED(3)         LOC="P127" | IOSTANDARD=LVTTL;                                # C11
 #NET LED(4)         LOC="P131" | IOSTANDARD=LVTTL;                                # C12
 #NET LED(5)         LOC="P132" | IOSTANDARD=LVTTL;                                # C13
@@ -89,7 +89,7 @@ NET oRamMemAddr[8]  LOC="P41"  | IOSTANDARD=LVTTL;                              
 NET oRamMemAddr[9]  LOC="P40"  | IOSTANDARD=LVTTL;                                # SDRAM_ADDR9
 NET oRamMemAddr[10] LOC="P141" | IOSTANDARD=LVTTL;                                # SDRAM_ADDR10
 NET oRamMemAddr[11] LOC="P35"  | IOSTANDARD=LVTTL;                                # SDRAM_ADDR11
-#NET SDRAM_ADDR(12) LOC="P34"  | IOSTANDARD=LVTTL;                                # SDRAM_ADDR12
+NET oRamMemAddr12 LOC="P34"  | IOSTANDARD=LVTTL;                                # SDRAM_ADDR12
 NET ioRamData[0]  LOC="P9"   | IOSTANDARD=LVTTL;                                # SDRAM_DATA0
 NET ioRamData[1]  LOC="P10"  | IOSTANDARD=LVTTL;                                # SDRAM_DATA1
 NET ioRamData[2]  LOC="P11"  | IOSTANDARD=LVTTL;                                # SDRAM_DATA2
@@ -114,7 +114,7 @@ NET oWEn          LOC="P6"   | IOSTANDARD=LVTTL;                                
 NET oCASN         LOC="P5"   | IOSTANDARD=LVTTL;                                # SDRAM_nCAS
 NET oRASN         LOC="P2"   | IOSTANDARD=LVTTL;                                # SDRAM_nRAS
 NET oCSN          LOC="P1"   | IOSTANDARD=LVTTL;                                # SDRAM_CS
-#NET SDRAM_CLK    LOC="P32"  | IOSTANDARD=LVTTL;                                # SDRAM_CLK
+NET oClock        LOC="P32"  | IOSTANDARD=LVTTL;                                # SDRAM_CLK
 NET oClockEn      LOC="P33"  | IOSTANDARD=LVTTL;                                # SDRAM_CKE
 #NET LED1           LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=SLOW;          # LED1
 #NET JTAG_TMS       LOC="P107" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # JTAG_TMS
