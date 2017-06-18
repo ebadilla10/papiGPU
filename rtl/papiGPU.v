@@ -8,6 +8,7 @@ module papiGPU (
   input iReset,
 
   // Outputs to SRAM device
+  output reg oClock,
   output reg oClockEn,
   output reg oCSN,
   output reg oRASN,
@@ -16,18 +17,25 @@ module papiGPU (
   output reg [1:0] oBank,
   output reg oDAMh,
   output reg oDAMl,
-  output reg [11:0] oRamMemAddr,
   inout [15:0] ioRamData,
+  output reg [11:0] oRamMemAddr,
+  output reg oRamMemAddr12 = 1'b0,
 
   // Input to UART
   input iRx,
   // Output to UART
-  output reg oTx
+  output reg oTx,
+
+  output reg oRegToPinREAD, // TO VERIFY SRAM
+	output reg oRegToPinWRITE, // TO VERIFY SRAM
+
+  output reg LED_debug
 
   // TODO: Outputs to VGA
 );
 
   // Wires to SRAM Device
+  wire wClock;
   wire wClockEn;
   wire wCSN;
   wire wRASN;
@@ -73,6 +81,11 @@ module papiGPU (
 
   wire w_Exception;
 
+  wire wRegToPinREAD; // TO VERIFY
+	wire wRegToPinWRITE; // TO VERIFY
+
+  wire wLED_debug;
+
   ///////////////////
   // INSTANCE MODULES
 
@@ -104,6 +117,7 @@ module papiGPU (
     .oVertexZ(wVertexZ),
 
     //Outputs to Memory device
+    .oClock(wClock),
     .oClockEn(wClockEn),
     .oCSN(wCSN),
     .oRASN(wRASN),
@@ -116,7 +130,12 @@ module papiGPU (
     .ioRamData(wRamData),
 
     .iRx(iRx),
-    .oTx(wTx)
+    .oTx(wTx),
+
+    .oRegToPinREAD(wRegToPinREAD), // TO VERIFY SRAM
+  	.oRegToPinWRITE(wRegToPinWRITE), // TO VERIFY SRAM
+
+    .LED_debug(wLED_debug)
   );
 
   graphicspipeline graphics_pipeline(
@@ -145,6 +164,7 @@ module papiGPU (
   );
 
   always @ ( * ) begin
+    oClock = wClock;
     oClockEn = wClockEn;
     oCSN = wCSN;
     oRASN = wRASN;
@@ -156,6 +176,11 @@ module papiGPU (
     oRamMemAddr = wRamMemAddr;
 
     oTx = wTx;
+
+    oRegToPinREAD = wRegToPinREAD; // TO VERIFY SRAM
+  	oRegToPinWRITE = wRegToPinWRITE; // TO VERIFY SRAM
+
+    LED_debug = wLED_debug;
   end
 
 endmodule // papiGPU
