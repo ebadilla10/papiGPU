@@ -8,7 +8,7 @@ module papiGPU (
   input iReset,
 
   // Outputs to SRAM device
-  output reg oClock,
+  output oClock,
   output reg oClockEn,
   output reg oCSN,
   output reg oRASN,
@@ -36,6 +36,7 @@ module papiGPU (
 
   // Wires to SRAM Device
   wire wClock;
+  assign oClock = wClock;
   wire wClockEn;
   wire wCSN;
   wire wRASN;
@@ -46,7 +47,7 @@ module papiGPU (
   wire wDAMl;
   wire [11:0] wRamMemAddr;
   wire [15:0] wRamData;
-  assign ioRamData = wRamData;
+  assign ioRamData = (1'b1) ? wRamData : wRamData;
 
   // Wires for outputs
   wire wEnable;
@@ -164,7 +165,6 @@ module papiGPU (
   );
 
   always @ ( * ) begin
-    oClock = wClock;
     oClockEn = wClockEn;
     oCSN = wCSN;
     oRASN = wRASN;

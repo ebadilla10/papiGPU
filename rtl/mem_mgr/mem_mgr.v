@@ -33,7 +33,7 @@ module mem_mgr (
   output reg [15:0] oVertexZ,
 
   // Outputs to SRAM device
-  output reg oClock,
+  output oClock,
   output reg oClockEn,
   output reg oCSN,
   output reg oRASN,
@@ -70,6 +70,7 @@ module mem_mgr (
 
   // Wires to SRAM Device
   wire wSRAMClock;
+  assign oClock = wSRAMClock;
   wire wClockEn;
   wire wCSN;
   wire wRASN;
@@ -80,7 +81,8 @@ module mem_mgr (
   wire wDAMl;
   wire [11:0] wRamMemAddr;
   wire [15:0] wRamData;
-  assign ioRamData = wRamData;
+
+  assign ioRamData = (1'b1) ? wRamData : wRamData;
 
   // Wires for outputs
   wire wEnable;
@@ -225,7 +227,6 @@ module mem_mgr (
     oVertexY = wVertexY;
     oVertexZ = wVertexZ;
 
-    oClock = wSRAMClock;
     oClockEn = wClockEn;
     oCSN = wCSN;
     oRASN = wRASN;

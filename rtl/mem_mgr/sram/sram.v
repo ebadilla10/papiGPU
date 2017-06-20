@@ -34,7 +34,7 @@ module sram_ctrl(
 	output reg oValidRead = 1'b0, //Request (read or write) complete - data valid if read
 
 	//Outputs to Memory device
-	output reg oClock,
+	output oClock,
 	output reg oClockEn,
 	output reg oCSN = 1'b0,
 	output reg oRASN = 1'b1,
@@ -52,7 +52,7 @@ module sram_ctrl(
 
 	parameter REFRESH_PERIOD_CNT=490; //Need a refresh cycle every 500 clks (15.625us)
 	parameter RESET_DELAY_CNT=3200; //Delay needed from reset
-	parameter REFRESH_TIME_RFC=6; //Time taken to do an auto refresh 66ns ( just over 2 clocks)
+	parameter REFRESH_TIME_RFC=9; //Time taken to do an auto refresh 66ns ( just over 2 clocks)
 	parameter PRECHARGE_TIME_RP=1; //Precharge time 20ns -> 1clk
 	parameter MODE_REGISTER_TIME_MRD=2; //Load mode register time - 2 clks
 	parameter ACTIVE_TIME_RCD=1; //Time taken to make a row active 15ns -> 1clk
@@ -91,14 +91,16 @@ module sram_ctrl(
 	parameter READ_REQ = 2'b01;
 	parameter WRITE_REQ = 2'b10;
 
+	parameter CYCLES_RATE = 3;
+
 	wire enable;
 	reg init_enable;
 	wire refresh_time;
 	wire init_time;
 	reg [3:0] init_state = INIT_POST_RESET;
 	reg [2:0] op_state = IDLE;
-	reg [2:0] state_clk_count = 3'b000;
-	reg [1:0] req_in_prog = 2'b00; //Handling a request - cleared when oValidRead sent
+	reg [3:0] state_clk_count = 4'b0000;
+	reg [1:0] req_in_prog = 2'b00; //Handling a request - cleared when rValidAnswer sent
 	reg [21:0] addr_req = 22'h000000; //latched addr
 	reg [15:0] data_req = 16'h0000; //latched data if write
 	wire row_cmp; //Set if addr change
@@ -108,6 +110,63 @@ module sram_ctrl(
 	reg refresh_req = 1'b0; //Refresh is required or in progress
 
 	reg [1:0] active_waiting = 2'b00;
+
+	reg rValidAnswer = 1'b0;
+	reg [1:0] rValidCounter = 2'b00;
+
+	wire wOpen;
+	assign wOpen = 1'bz;
+
+	PLL_BASE #(
+	      .BANDWIDTH("OPTIMIZED"), // "HIGH", "LOW" or "OPTIMIZED"
+	      .CLKFBOUT_MULT(24),      // Multiply value for all CLKOUT clock outputs (1-64)
+	      .CLKFBOUT_PHASE(0.0),    // Phase offset in degrees of the clock feedback output (0.0-360.0).
+	      .CLKIN_PERIOD(31.25),   // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
+	      // CLKOUT0_DIVIDE - CLKOUT5_DIVIDE: Divide amount for CLKOUT# clock output (1-128)
+	      .CLKOUT0_DIVIDE(8),    .CLKOUT1_DIVIDE(8),
+	      .CLKOUT2_DIVIDE(1),    .CLKOUT3_DIVIDE(1),
+	      .CLKOUT4_DIVIDE(1),    .CLKOUT5_DIVIDE(1),
+	      // CLKOUT0_DUTY_CYCLE - CLKOUT5_DUTY_CYCLE: Duty cycle for CLKOUT# clock output (0.01-0.99).
+	      .CLKOUT0_DUTY_CYCLE(0.5), .CLKOUT1_DUTY_CYCLE(0.5),
+	      .CLKOUT2_DUTY_CYCLE(0.5), .CLKOUT3_DUTY_CYCLE(0.5),
+	      .CLKOUT4_DUTY_CYCLE(0.5), .CLKOUT5_DUTY_CYCLE(0.5),
+	      // CLKOUT0_PHASE - CLKOUT5_PHASE: Output phase relationship for CLKOUT# clock output (-360.0-360.0).
+	      .CLKOUT0_PHASE(0.0),      .CLKOUT1_PHASE(0.0), // Capture clock
+	      .CLKOUT2_PHASE(0.0),      .CLKOUT3_PHASE(0.0),
+	      .CLKOUT4_PHASE(0.0),      .CLKOUT5_PHASE(0.0),
+
+	      .CLK_FEEDBACK("CLKFBOUT"),           // Clock source to drive CLKFBIN ("CLKFBOUT" or "CLKOUT0")
+	      .COMPENSATION("SYSTEM_SYNCHRONOUS"), // "SYSTEM_SYNCHRONOUS", "SOURCE_SYNCHRONOUS", "EXTERNAL"
+	      .DIVCLK_DIVIDE(1),                   // Division value for all output clocks (1-52)
+	      .REF_JITTER(0.1),                    // Reference Clock Jitter in UI (0.000-0.999).
+	      .RESET_ON_LOSS_OF_LOCK("FALSE")        // Must be set to FALSE
+	   ) PLL_BASE_inst (
+	      .CLKFBOUT(clkfb), // 1-bit output: PLL_BASE feedback output
+	      // CLKOUT0 - CLKOUT5: 1-bit (each) output: Clock outputs
+	      .CLKOUT0(clku),      .CLKOUT1(clk_memu),
+	      .CLKOUT2(wOpen),      .CLKOUT3(wOpen),
+	      .CLKOUT4(wOpen),      .CLKOUT5(wOpen),
+	      .LOCKED(wOpen),  // 1-bit output: PLL_BASE lock status output
+	      .CLKFBIN(clkfb), // 1-bit input: Feedback clock input
+	      .CLKIN(iClock),  // 1-bit input: Clock input
+	      .RST(iReset)    // 1-bit input: Reset input
+	   );
+
+		 BUFG BUFG_inst_2 (
+	       .O(clock_out), // 1-bit output: Clock buffer output
+	       .I(clku)  // 1-bit input: Clock buffer input
+	    );
+
+			ODDR2 #(
+      .DDR_ALIGNMENT("NONE"), // Sets output alignment to "NONE", "C0" or "C1"
+      .INIT(1'b0),    // Sets initial state of the Q output to 1'b0 or 1'b1
+      .SRTYPE("SYNC") // Specifies "SYNC" or "ASYNC" set/reset
+   ) ODDR2_inst (
+      .Q(oClock), .CE(1'b1),
+      .C0(clock_out),  .C1(!clock_out),
+      .D0(1'b0), .D1(1'b1),
+      .R(1'b0),  .S(1'b0)
+   );
 
 	divider #(.DIVIDE(REFRESH_PERIOD_CNT),.DIVIDE_BITS(9),.CLEAR_COUNT(1),.CLEAR_BITS(1)) refresh_clk (
     .enable(enable),
@@ -124,21 +183,19 @@ module sram_ctrl(
     );
 
 	assign enable = 1'b1;
+	reg [15:0] rDataBU = 16'h0000;
+	wire [15:0] wDataBU = 16'h0000;
 	//If a read req, drive data out from memory, otherwise z
-	assign ioData = (!iWrite) ? ioRamData : 16'bz;
+	assign ioData = (!iWrite) ? rDataBU : 16'bz;
 	assign ioRamData = (iWrite) ? ioData : 16'bz;
+	assign wDataBU = ioRamData;
 	assign row_cmp_fail = iValidRequest && (addr_req[21:8] != iAddress[21:8]);
 	assign row_change = row_diff || row_cmp_fail;
 	assign oDAMh = 1'b0; //not used
 	assign oDAMl = 1'b0; //not used
 
-  wire SRAMClock = !iClock;
-	always @ ( * ) begin
-		oClock = SRAMClock;
-	end
-
 	//Set long lived flags
-	always @(posedge iClock)
+	always @(posedge clock_out)
 	 begin
 		if (iReset)
 		 begin
@@ -209,7 +266,7 @@ module sram_ctrl(
 	 end
 
 	//Initialisation and operational block
-	always @(posedge iClock)
+	always @(posedge clock_out)
 	 begin
 		if (iReset)
 		 begin
@@ -221,10 +278,10 @@ module sram_ctrl(
 			oRASN <= 1'b1;
 			oCASN <= 1'b1;
 			oWEn <= 1'b1;
-			state_clk_count <= 3'b000;
+			state_clk_count <= 4'b0000;
 			oRamMemAddr <= ZERO_ADDR;
 			oBank <= 2'b00;
-			oValidRead <= 1'b0;
+			rValidAnswer <= 1'b0;
 		 end
 		else
 		 begin
@@ -239,10 +296,10 @@ module sram_ctrl(
 					oRASN <= 1'b1;
 					oCASN <= 1'b1;
 					oWEn <= 1'b1;
-					state_clk_count <= 3'b000;
+					state_clk_count <= 4'b0000;
 					oRamMemAddr <= ZERO_ADDR;
 					oBank <= 2'b00;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 				  end
 				INIT_CLKE : begin
 					init_enable <= 1'b1; //Start init counter
@@ -254,10 +311,10 @@ module sram_ctrl(
 					oRASN <= 1'b1;
 					oCASN <= 1'b1;
 					oWEn <= 1'b1;
-					state_clk_count <= 3'b000;
+					state_clk_count <= 4'b0000;
 					oRamMemAddr <= ZERO_ADDR;
 					oBank <= 2'b00;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 				 end
 				INIT_NOP: begin //oCSN = Low, oRASN, oCASN, oWEn high
 					init_enable <= 1'b1; //Start init counter
@@ -268,18 +325,18 @@ module sram_ctrl(
 					oCASN <= 1'b1;
 					oWEn <= 1'b1;
 					op_state <= IDLE;
-					state_clk_count <= 3'b000;
+					state_clk_count <= 4'b0000;
 					oRamMemAddr <= ZERO_ADDR;
 					oBank <= 2'b00;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 				 end
 				INIT_PRECHARGE_ALL : begin //Wait until init time is up and then do a pre-charge
 					oClockEn <= 1'b1;
 					oCSN <= 1'b0;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 					op_state <= IDLE;
 					oBank <= 2'b00;
-					state_clk_count <= 3'b000;
+					state_clk_count <= 4'b0000;
 					if (init_time == 1'b0)
 						begin
 							//Do another NOP
@@ -306,11 +363,11 @@ module sram_ctrl(
 					oClockEn <= 1'b1;
 					oCSN <= 1'b0;
 					init_enable <= 1'b0;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 					op_state <= IDLE;
 					oBank <= 2'b00;
 					oRamMemAddr <= ZERO_ADDR;
-					if (state_clk_count == 3'b001)
+					if (state_clk_count == 4'b0010)
 					 begin
 							//Do the first refresh
 							init_state <= INIT_REFRESH_1;
@@ -328,7 +385,7 @@ module sram_ctrl(
 							oRASN <= 1'b1;
 							oCASN <= 1'b1;
 							oWEn <= 1'b1;
-							state_clk_count <= 3'b000;
+							state_clk_count <= 4'b0000;
 					 end
 					else
 					 begin
@@ -344,12 +401,12 @@ module sram_ctrl(
 					oClockEn <= 1'b1;
 					oCSN <= 1'b0;
 					init_enable <= 1'b0;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 					op_state <= IDLE;
 					oBank <= 2'b00;
 					oRamMemAddr <= ZERO_ADDR;
 
-					if (state_clk_count == 3'b000)begin
+					if (state_clk_count == 4'b0000)begin
 					 //oRASN=0, oCASN=0, oWEn=1
 					 init_state <= INIT_REFRESH_2;
 					 oRASN <= 1'b0;
@@ -357,7 +414,7 @@ module sram_ctrl(
 					 oWEn <= 1'b1;
 					 state_clk_count <= state_clk_count + 1'b1;
 					end
-					else if (state_clk_count == REFRESH_TIME_RFC)
+					else if (state_clk_count == (REFRESH_TIME_RFC - 1))
 					 begin
 							//Load mode register after refresh has completed
 							init_state <= INIT_LMR;
@@ -365,7 +422,7 @@ module sram_ctrl(
 							oCASN <= 1'b0;
 							oWEn <= 1'b0;
 							oRamMemAddr <= MODE_REGISTER;
-							state_clk_count <= 3'b000;
+							state_clk_count <= 4'b0000;
 					 end
 					else
 					 begin
@@ -381,7 +438,7 @@ module sram_ctrl(
 					oClockEn <= 1'b1;
 					oCSN <= 1'b0;
 					init_enable <= 1'b0;
-					oValidRead <= 1'b0;
+					rValidAnswer <= 1'b0;
 					op_state <= IDLE;
 					oBank <= 2'b00;
 					oRamMemAddr <= ZERO_ADDR;
@@ -392,7 +449,7 @@ module sram_ctrl(
 					 begin
 							//Device is now ready for use
 							init_state <= INIT_COMPLETE;
-							state_clk_count <= 3'b000;
+							state_clk_count <= 4'b0000;
 					 end
 					else
 					 begin
@@ -409,9 +466,9 @@ module sram_ctrl(
 					//Do Normal Op state machine
 					case (op_state)
 						IDLE: begin
-							state_clk_count <= 3'b000;
-							oValidRead <= 1'b0;
-							if (iValidRequest || (req_in_prog != NO_REQ && !oValidRead))
+							state_clk_count <= 4'b0000;
+							rValidAnswer <= 1'b0;
+							if (iValidRequest || (req_in_prog != NO_REQ && !rValidAnswer))
 							 begin
 								//New request
 								//Activate row
@@ -456,7 +513,7 @@ module sram_ctrl(
 							 end
 						 end
 						ACTIVE_ROW : begin
-							state_clk_count <= 3'b000;
+							state_clk_count <= 4'b0000;
 							if (refresh_time || refresh_req) //Refresh takes priority
 							 begin
 								//Close row and do a refresh cycle
@@ -467,7 +524,7 @@ module sram_ctrl(
 								op_state <= PRECHARGING;
 								oRamMemAddr <= PRECHARGE_ALL;
 								oBank <= 2'b00;
-								oValidRead <= 1'b0;
+								rValidAnswer <= 1'b0;
 							 end
 							else if (iValidRequest || (req_in_prog != NO_REQ))
 							 begin
@@ -480,7 +537,7 @@ module sram_ctrl(
 									op_state <= PRECHARGING;
 									oRamMemAddr <= PRECHARGE_ALL;
 									oBank <= 2'b00;
-									oValidRead <= 1'b0;
+									rValidAnswer <= 1'b0;
 								 end
 								else
 								 begin
@@ -496,13 +553,13 @@ module sram_ctrl(
 									  begin
 										 oWEn <= 1'b0;
 										 op_state <= WRITING; //Device remains in active state
-										 oValidRead <= 1'b1; //Request completed
+										 rValidAnswer <= 1'b1; //Request completed
 									  end
 									 else //read req
 									  begin
 										 oWEn <= 1'b1;
 										 op_state <= READING;
-										 //oValidRead <= 1'b0;
+										 //rValidAnswer <= 1'b0;
 									  end
 									 if (iValidRequest)
 									  begin
@@ -538,7 +595,7 @@ module sram_ctrl(
 								op_state <= ACTIVE_ROW;
 								oRamMemAddr <= ZERO_ADDR;
 								oBank <= 2'b00;
-								oValidRead <= 1'b0;
+								rValidAnswer <= 1'b0;
 							 end
 						 end
 						WRITING : begin
@@ -550,8 +607,8 @@ module sram_ctrl(
 							               // oRamMemAddr <= ZERO_ADDR;
 							oBank <= 2'b00;
 							op_state <= ACTIVE_ROW;
-							state_clk_count <= 3'b000;
-							oValidRead <= 1'b0;
+							state_clk_count <= 4'b0000;
+							rValidAnswer <= 1'b0;
 						 end
 						READING : begin
 						  oRegToPinREAD <= 1'b0; // TO VERIFY
@@ -563,8 +620,8 @@ module sram_ctrl(
 							oBank <= 2'b00;
 							if (state_clk_count == CAS_LATENCY - 1)
 							 begin
-								//Data should be valid by next posedge of iClock - assert oValidRead now
-								oValidRead <= 1'b1;
+								//Data should be valid by next posedge of oClock - assert rValidAnswer now
+								rValidAnswer <= 1'b1;
 								op_state <= READING;
 								state_clk_count <= state_clk_count + 1'b1;
 							 end
@@ -572,13 +629,13 @@ module sram_ctrl(
 							 begin
 								//Read now complete
 								op_state <= ACTIVE_ROW;
-								state_clk_count <= 0;
-								oValidRead <= 1'b0;
+								state_clk_count <= 4'b0000;
+								rValidAnswer <= 1'b0;
 							 end
 							else
 							 begin
 								//Wait for CAS latency to complete
-								oValidRead <= 1'b0;
+								rValidAnswer <= 1'b0;
 								op_state <= READING;
 								state_clk_count <= state_clk_count + 1'b1;
 							 end
@@ -591,10 +648,10 @@ module sram_ctrl(
 							op_state <= IDLE;
 							oRamMemAddr <= ZERO_ADDR;
 							oBank <= 2'b00;
-							oValidRead <= 1'b0;
+							rValidAnswer <= 1'b0;
 						 end
 						REFRESHING : begin //oRASN=0. oCASN=0, oWEn=1
-							oValidRead <= 1'b0;
+							rValidAnswer <= 1'b0;
 							oBank <= 2'b00;
 							oRamMemAddr <= ZERO_ADDR;
 							//NOP
@@ -604,7 +661,7 @@ module sram_ctrl(
 							if (state_clk_count == (REFRESH_TIME_RFC - 1))
 							 begin
 									op_state <= IDLE;
-									state_clk_count <= 3'b000;
+									state_clk_count <= 4'b0000;
 							 end
 							else
 							 begin
@@ -613,8 +670,8 @@ module sram_ctrl(
 							 end
 						 end
 						default : begin
-							state_clk_count <= 3'b000;
-							oValidRead <= 1'b0;
+							state_clk_count <= 4'b0000;
+							rValidAnswer <= 1'b0;
 							//NOP
 							oRASN <= 1'b1;
 							oCASN <= 1'b1;
@@ -634,13 +691,32 @@ module sram_ctrl(
 					oCASN <= 1'b1;
 					oWEn <= 1'b1;
 					op_state <= IDLE;
-					state_clk_count <= 3'b000;
+					state_clk_count <= 4'b0000;
 					oRamMemAddr <= ZERO_ADDR;
 					oBank <= 2'b00;
 				 end
 			endcase
 		 end
 	 end
+
+	 always @ (negedge clock_out) begin
+			if (rValidCounter == 2'b00) begin
+			 if (rValidAnswer) begin
+					oValidRead = 1'b1;
+					rDataBU = wDataBU;
+				 rValidCounter = rValidCounter + 2'b01;
+			 end
+
+		 end
+		 else if (rValidCounter == CYCLES_RATE) begin
+				oValidRead = 1'b0;
+			 rValidCounter = 2'b00;
+		 end
+		 else begin
+				rValidCounter = rValidCounter + 2'b01;
+		 end
+
+	 end // always
 
 endmodule
 
