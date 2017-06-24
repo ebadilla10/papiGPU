@@ -17,7 +17,7 @@ module papiGPU (
   output reg [1:0] oBank,
   output reg oDAMh,
   output reg oDAMl,
-  inout [15:0] ioRamData,
+  inout wire [15:0] ioRamData,
   output reg [11:0] oRamMemAddr,
   output reg oRamMemAddr12 = 1'b0,
 
@@ -46,8 +46,6 @@ module papiGPU (
   wire wDAMh;
   wire wDAMl;
   wire [11:0] wRamMemAddr;
-  wire [15:0] wRamData;
-  assign ioRamData = (1'b1) ? wRamData : wRamData;
 
   // Wires for outputs
   wire wEnable;
@@ -90,8 +88,13 @@ module papiGPU (
   ///////////////////
   // INSTANCE MODULES
 
+  BUFG BUFG_inst (
+			.O(clock_in), // 1-bit output: Clock buffer output
+			.I(iClock)  // 1-bit input: Clock buffer input
+	 );
+
   mem_mgr memory_manager(
-    .iClock(iClock),
+    .iClock(clock_in),
     .iReset(iReset),
 
     .oEnable(wEnable),
@@ -128,7 +131,7 @@ module papiGPU (
     .oDAMh(wDAMh),
     .oDAMl(wDAMl),
     .oRamMemAddr(wRamMemAddr),
-    .ioRamData(wRamData),
+    .ioRamData(ioRamData),
 
     .iRx(iRx),
     .oTx(wTx),

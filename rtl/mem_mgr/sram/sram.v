@@ -44,19 +44,19 @@ module sram_ctrl(
 	output oDAMh,
 	output oDAMl,
 	output reg [11:0] oRamMemAddr,
-	inout [15:0] ioRamData,
+	inout wire [15:0] ioRamData,
 
 	output reg oRegToPinREAD = 1, // TO VERIFY
 	output reg oRegToPinWRITE = 1 // TO VERIFY
     );
 
-	parameter REFRESH_PERIOD_CNT=490; //Need a refresh cycle every 500 clks (15.625us)
-	parameter RESET_DELAY_CNT=3200; //Delay needed from reset
+	parameter REFRESH_PERIOD_CNT=(490*3); //Need a refresh cycle every 500 clks (15.625us)
+	parameter RESET_DELAY_CNT=(4000*3); //Delay needed from reset
 	parameter REFRESH_TIME_RFC=9; //Time taken to do an auto refresh 66ns ( just over 2 clocks)
 	parameter PRECHARGE_TIME_RP=1; //Precharge time 20ns -> 1clk
 	parameter MODE_REGISTER_TIME_MRD=2; //Load mode register time - 2 clks
 	parameter ACTIVE_TIME_RCD=1; //Time taken to make a row active 15ns -> 1clk
-	parameter MODE_REGISTER = 12'b001000100000; //Write burst=1, Std Op, CAS=2, Seq, BL=1 (no burst)
+	parameter MODE_REGISTER = 12'b000000100001; //Write burst=0, Std Op, CAS=2, Seq, BL=1 (no burst)
 	parameter ZERO_ADDR = 12'b000000000000; //Default Addr line
 	parameter ZERO_CAS = 12'b010000000000; //A10 = high all banks pre-charged
 	parameter PRECHARGE_ALL = 12'b010000000000; //A10 = high all banks pre-charged
@@ -93,8 +93,8 @@ module sram_ctrl(
 
 	parameter CYCLES_RATE = 3;
 
-	wire enable;
-	reg init_enable;
+  wire enable;
+	reg init_enable = 1'b0;
 	wire refresh_time;
 	wire init_time;
 	reg [3:0] init_state = INIT_POST_RESET;
@@ -168,27 +168,27 @@ module sram_ctrl(
       .R(1'b0),  .S(1'b0)
    );
 
-	divider #(.DIVIDE(REFRESH_PERIOD_CNT),.DIVIDE_BITS(9),.CLEAR_COUNT(1),.CLEAR_BITS(1)) refresh_clk (
+  assign enable = 1'b1;
+
+	divider #(.DIVIDE(REFRESH_PERIOD_CNT),.DIVIDE_BITS(11),.CLEAR_COUNT(1),.CLEAR_BITS(1)) refresh_clk (
     .enable(enable),
-    .iClock(iClock),
+    .iClock(clock_out),
     .iReset(iReset),
     .out1(refresh_time)
     );
 
-	divider #(.DIVIDE(RESET_DELAY_CNT),.DIVIDE_BITS(12),.CLEAR_COUNT(1),.CLEAR_BITS(1)) init_clk (
+	divider #(.DIVIDE(RESET_DELAY_CNT),.DIVIDE_BITS(14),.CLEAR_COUNT(1),.CLEAR_BITS(1)) init_clk (
     .enable(init_enable),
-    .iClock(iClock),
+    .iClock(clock_out),
     .iReset(iReset),
     .out1(init_time)
     );
 
-	assign enable = 1'b1;
 	reg [15:0] rDataBU = 16'h0000;
-	wire [15:0] wDataBU = 16'h0000;
 	//If a read req, drive data out from memory, otherwise z
 	assign ioData = (!iWrite) ? rDataBU : 16'bz;
 	assign ioRamData = (iWrite) ? ioData : 16'bz;
-	assign wDataBU = ioRamData;
+
 	assign row_cmp_fail = iValidRequest && (addr_req[21:8] != iAddress[21:8]);
 	assign row_change = row_diff || row_cmp_fail;
 	assign oDAMh = 1'b0; //not used
@@ -703,7 +703,7 @@ module sram_ctrl(
 			if (rValidCounter == 2'b00) begin
 			 if (rValidAnswer) begin
 					oValidRead = 1'b1;
-					rDataBU = wDataBU;
+					rDataBU = ioRamData;
 				 rValidCounter = rValidCounter + 2'b01;
 			 end
 
@@ -733,8 +733,8 @@ module divider(
 	 parameter CLEAR_BITS=4;
 	 parameter CLEAR_COUNT=9;
 
-	 reg [DIVIDE_BITS-1:0] counter;
-	 reg [CLEAR_BITS-1:0] clear_counter;
+	 reg [DIVIDE_BITS-1:0] counter = 0;
+	 reg [CLEAR_BITS-1:0] clear_counter = 0;
 
 	 always @(posedge iClock or posedge iReset)
 	 begin

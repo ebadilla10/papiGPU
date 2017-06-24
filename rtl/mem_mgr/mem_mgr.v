@@ -43,7 +43,7 @@ module mem_mgr (
   output reg oDAMh,
   output reg oDAMl,
   output reg [11:0] oRamMemAddr,
-  inout [15:0] ioRamData,
+  inout wire [15:0] ioRamData,
 
   // Input to UART
   input iRx,
@@ -80,9 +80,6 @@ module mem_mgr (
   wire wDAMh;
   wire wDAMl;
   wire [11:0] wRamMemAddr;
-  wire [15:0] wRamData;
-
-  assign ioRamData = (1'b1) ? wRamData : wRamData;
 
   // Wires for outputs
   wire wEnable;
@@ -182,7 +179,7 @@ module mem_mgr (
     .oDAMh(wDAMh),
     .oDAMl(wDAMl),
     .oRamMemAddr(wRamMemAddr),
-    .ioRamData(wRamData),
+    .ioRamData(ioRamData),
 
     .oRegToPinREAD(wRegToPinREAD), // TO VERIFY SRAM
   	.oRegToPinWRITE(wRegToPinWRITE) // TO VERIFY SRAM
