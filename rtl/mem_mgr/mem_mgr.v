@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "./mem_ctrl/mem_ctrl.v"
-`include "./sram/sram.v"
+`include "./sram/sram_syn.v"
 `include "./uart/uart.v"
 
 module mem_mgr (
@@ -33,6 +33,7 @@ module mem_mgr (
   output reg [15:0] oVertexZ,
 
   // Outputs to SRAM device
+  output oClock,
   output reg oClockEn,
   output reg oCSN,
   output reg oRASN,
@@ -42,12 +43,17 @@ module mem_mgr (
   output reg oDAMh,
   output reg oDAMl,
   output reg [11:0] oRamMemAddr,
-  inout [15:0] ioRamData,
+  inout wire [15:0] ioRamData,
 
   // Input to UART
   input iRx,
   // Output to UART
-  output reg oTx
+  output reg oTx,
+
+  output reg oRegToPinREAD, // TO VERIFY
+	output reg oRegToPinWRITE, // TO VERIFY
+
+  output reg LED_debug
 );
 
   // Wires between UART-MEM_CTRL
@@ -55,7 +61,8 @@ module mem_mgr (
   wire wRxReady, wRxError, wTxSent, wTxReady;
 
   // Wires between SRAM-MEM_CTRL
-  wire [15:0] wData;
+  wire [15:0] wData1;
+  wire [15:0] wData2;
   wire wValidRead, wValidRequest, wWrite;
   wire [21:0] wAddress;
 
@@ -63,6 +70,8 @@ module mem_mgr (
   wire wTx;
 
   // Wires to SRAM Device
+  wire wSRAMClock;
+  assign oClock = wSRAMClock;
   wire wClockEn;
   wire wCSN;
   wire wRASN;
@@ -72,8 +81,6 @@ module mem_mgr (
   wire wDAMh;
   wire wDAMl;
   wire [11:0] wRamMemAddr;
-  wire [15:0] wRamData;
-  assign ioRamData = wRamData;
 
   // Wires for outputs
   wire wEnable;
@@ -98,6 +105,11 @@ module mem_mgr (
   wire [15:0] wVertexX;
   wire [15:0] wVertexY;
   wire [15:0] wVertexZ;
+
+  wire wRegToPinREAD; // TO VERIFY
+	wire wRegToPinWRITE; // TO VERIFY
+
+  wire wLED_debug;
 
   ///////////////////
   // INSTANCE MODULES
@@ -129,7 +141,8 @@ module mem_mgr (
     .oVertexY(wVertexY),
     .oVertexZ(wVertexZ),
 
-    .ioData(wData),
+    .oData(wData1),
+    .iData(wData2),
     .iValidRead(wValidRead),
     .oAddress(wAddress),
     .oValidRequest(wValidRequest),
@@ -141,7 +154,9 @@ module mem_mgr (
     .iTxSent(wTxSent),
 
     .oTxByte(wTxByte),
-    .oTxReady(wTxReady)
+    .oTxReady(wTxReady),
+
+    .LED_debug(wLED_debug)
   );
 
   sram_ctrl sram_controller(
@@ -150,12 +165,14 @@ module mem_mgr (
 
     //Inputs and outputs to controller from using module
     .iAddress(wAddress),
-    .ioData(wData),
+    .iData(wData1),
+    .oData(wData2),
     .iValidRequest(wValidRequest),
     .iWrite(wWrite),
     .oValidRead(wValidRead),
 
     //Outputs to Memory device
+    .oClock(wSRAMClock),
     .oClockEn(wClockEn),
     .oCSN(wCSN),
     .oRASN(wRASN),
@@ -165,7 +182,10 @@ module mem_mgr (
     .oDAMh(wDAMh),
     .oDAMl(wDAMl),
     .oRamMemAddr(wRamMemAddr),
-    .ioRamData(wRamData)
+    .ioRamData(ioRamData),
+
+    .oRegToPinREAD(wRegToPinREAD), // TO VERIFY SRAM
+  	.oRegToPinWRITE(wRegToPinWRITE) // TO VERIFY SRAM
   );
 
   uart_ctrl uart_controller(
@@ -218,6 +238,11 @@ module mem_mgr (
     oRamMemAddr = wRamMemAddr;
 
     oTx = wTx;
+
+    oRegToPinREAD = wRegToPinREAD; // TO VERIFY SRAM
+  	oRegToPinWRITE = wRegToPinWRITE; // TO VERIFY SRAM
+
+    LED_debug = wLED_debug;
 
   end
 

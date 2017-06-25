@@ -19,8 +19,8 @@ int papiGPU_initialize(gpu_portname         portname[],
   // Check for valid arguments
   if (NULL == state){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The state pointer is null. " \
-            "Error code: %d\n", EINVAL);
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
     #endif
     return EINVAL;
   }
@@ -30,8 +30,8 @@ int papiGPU_initialize(gpu_portname         portname[],
   status = strcmp(portname, "");
   if (!status){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The GPU portname is empty. " \
-            "Error code: %d\n", EINVAL);
+      fprintf (stderr, "ERROR: The GPU portname is empty. " \
+               "Error code: %d\n", EINVAL);
     #endif
     *state = GPU_ERROR;
     return EINVAL;
@@ -41,7 +41,7 @@ int papiGPU_initialize(gpu_portname         portname[],
 
   if (!status){
     #ifdef DEBUGLOG
-    printf ("\x1B[32m" "INFO: " "\x1B[0m" "The GPU was initialized.\n");
+      fprintf (stderr, "INFO: The GPU was initialized.\n");
     #endif
     *state = GPU_INITIALIZED;
   }
@@ -62,16 +62,16 @@ int papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
   // Check for valid arguments
   if (NULL == state){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The state pointer is null. " \
-            "Error code: %d\n", EINVAL);
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
     #endif
     return EINVAL;
   }
 
   if (0 > fp_distance){
     #ifdef DEBUGLOG
-    printf ("\x1B[31m" "ERROR: " "\x1B[0m" "The focal point distance of " \
-            "camera can not be negative. Error code: %d\n", EINVAL);
+      fprintf (stderr, "ERROR: The focal point distance of camera " \
+               "can not be negative. Error code: %d\n", EINVAL);
     #endif
     *state = GPU_ERROR;
     return EINVAL;
@@ -81,7 +81,7 @@ int papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
 
   if (!status){
     #ifdef DEBUGLOG
-    printf ("\x1B[32m" "INFO: " "\x1B[0m" "The camera was created.\n");
+      fprintf (stderr, "INFO: The camera was created.\n");
     #endif
     *state = GPU_CAMERA_CREATED;
   }
@@ -89,6 +89,9 @@ int papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
   return status;
 }
 
+/**
+ * Create an object and keep it open
+ */
 int papiGPU_create_object(bool                          enable,
                           struct papiGPU_rotate_angles  rota_angles,
                           struct papiGPU_scales         scales,
@@ -96,19 +99,82 @@ int papiGPU_create_object(bool                          enable,
                           gpu_object_id                *object_id,
                           enum papiGPU_states          *state)
 {
-  printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Function not implemented\n");
-  return EPERM;
+  int status = 0;
+
+  // Check for valid arguments
+  if (NULL == state){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  if (NULL == object_id){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The object ID pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  status = i_papiGPU_create_object(enable,
+                                 rota_angles,
+                                 scales,
+                                 translation,
+                                 object_id,
+                                 state);
+
+  if (!status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "INFO: The object was created.\n");
+    #endif
+    *state = GPU_OBJECT_CREATED;
+  }
+
+  return status;
 }
 
 /**
  * Insert an array of verteces in open object
  */
 int papiGPU_insert_vertices(gpu_object_id          object_id,
+                            int                    num_vtx,
                             struct papiGPU_vertex  vertex[],
                             enum papiGPU_states   *state)
 {
-  printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Function not implemented\n");
-  return EPERM;
+  int status = 0;
+
+  // Check for valid arguments
+  if (NULL == state){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  if (0 > num_vtx){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: Number of vertices wouldn't be negative. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  status = i_papiGPU_insert_vertices(object_id,
+                                     num_vtx,
+                                     vertex,
+                                     state);
+
+  if (!status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "INFO: The vertices were inserted.\n");
+    #endif
+    *state = GPU_VERTEX_INSERTED;
+  }
+
+  return status;
 }
 
 /**
@@ -117,8 +183,28 @@ int papiGPU_insert_vertices(gpu_object_id          object_id,
 int papiGPU_close_object(gpu_object_id        object_id,
                          enum papiGPU_states *state)
 {
- printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Function not implemented\n");
- return EPERM;
+  int status = 0;
+
+  // Check for valid arguments
+  if (NULL == state){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  status = i_papiGPU_close_object(object_id,
+                                  state);
+
+  if (!status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "INFO: The object was closed.\n");
+    #endif
+    *state = GPU_OBJECT_CLOSED;
+  }
+
+  return status;
 }
 
 /**
@@ -130,8 +216,8 @@ int papiGPU_change_transf_matrix(gpu_object_id                object_id,
                                  struct papiGPU_translation   translation,
                                  enum papiGPU_states         *state)
 {
- printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Function not implemented\n");
- return EPERM;
+  fprintf (stderr, "ERROR: Function not implemented\n");
+  return EPERM;
 }
 
 /**
@@ -139,6 +225,25 @@ int papiGPU_change_transf_matrix(gpu_object_id                object_id,
  */
 int papiGPU_refresh(enum papiGPU_states *state)
 {
-  printf ("\x1B[31m" "ERROR: " "\x1B[0m" "Function not implemented\n");
-  return EPERM;
+  int status = 0;
+
+  // Check for valid arguments
+  if (NULL == state){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "ERROR: The state pointer is null. " \
+               "Error code: %d\n", EINVAL);
+    #endif
+    return EINVAL;
+  }
+
+  status = i_papiGPU_refresh(state);
+
+  if (!status){
+    #ifdef DEBUGLOG
+      fprintf (stderr, "INFO: The object was refreshed.\n");
+    #endif
+    *state = GPU_REFRESHED;
+  }
+
+  return status;
 }

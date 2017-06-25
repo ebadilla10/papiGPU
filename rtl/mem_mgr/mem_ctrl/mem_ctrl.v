@@ -30,7 +30,8 @@ module mem_ctrl(
   output reg [15:0] oVertexZ,
 
   // Inputs from SRAM
-  inout [15:0] ioData,
+  input [15:0] iData,
+  output reg [15:0] oData,
   input wire   iValidRead, // ACK
   // Outputs to SRAM
   output reg [21:0] oAddress,
@@ -44,7 +45,9 @@ module mem_ctrl(
   input wire       iTxSent,
   // Output to UART
   output reg [7:0] oTxByte,
-  output reg       oTxReady = 1'b0
+  output reg       oTxReady = 1'b0,
+
+  output reg       LED_debug = 1'b1
 );
 
 // Memory control sizes
@@ -167,12 +170,13 @@ reg [15:0] rActualAddr = 16'h0000;
 reg [15:0] rStopAddr   = 16'h0000;
 reg [15:0] rOffsetAddr = 16'h0000;
 
-reg [15:0] rData           = 16'h0000;
 reg [15:0] rRespFinalState = 16'h0000;
 reg        rOffsetVertex   = 1'b0;
 reg        rFinalExcep     = 1'b0;
 
-assign ioData = (!oWrite) ? 16'bz : rData;
+// For waiting 1 clock cycle from SRAM ready to next request
+reg can_read = 1'b0;
+reg [15:0] DataBU = 16'h0000;
 
 always @ ( posedge iClock ) begin
   if (iRxReady) begin
@@ -250,7 +254,6 @@ always @ (posedge iClock) begin
     rActualAddr <= 16'h0000;
     rStopAddr   <= 16'h0000;
     rOffsetAddr <= 16'h0000;
-    rData           <= 16'h0000;
     rRespFinalState <= 16'h0000;
     rOffsetVertex   <= 1'b0;
     rFinalExcep     <= 1'b0;
@@ -369,7 +372,7 @@ always @ (posedge iClock) begin
               if (iRx16Bits == FINAL_BLOCK_VALID_TAG) begin
 
                 if (!rFinalExcep) begin
-                  rData <= iRx16Bits;
+                  oData <= iRx16Bits;
                   oAddress <= rStopAddr;
                   oWrite <= 1'b1;
                   oValidRequest <= 1'b1;
@@ -387,7 +390,7 @@ always @ (posedge iClock) begin
               end
 
             end else begin
-              rData <= iRx16Bits;
+              oData <= iRx16Bits;
               oAddress <= rActualAddr;
               oWrite <= 1'b1;
               oValidRequest <= 1'b1;
@@ -405,309 +408,333 @@ always @ (posedge iClock) begin
         rSubStateChg <= 1'b0;
       end // if rSubStateChg
       else begin
-        iTx16BitsReady <= 1'b0;
         if (iValidRead && oEnable) begin
-          case(rRefreshState)
+          DataBU <= iData;
+          can_read <= 1'b1;
+          oValidRequest <= 1'b0;
 
-            REFRESH_INIT_GPU: begin
+          LED_debug <= 1'b0; // DEBUG
 
-              case (rRfrshInitGpuSubState)
-                RFRSH_INT_GPU_VALID_TAG: begin
-                  case (ioData)
-                    GPU_VALID_TAG: begin
-                      rRfrshInitGpuSubState <= RFRSH_INT_GPU_NUM_OBJ;
-                      oAddress <= oAddress + 1;
-                      oWrite <= 1'b0;
-                      oValidRequest <= 1'b1;
-                    end // case GPU_VALID_TAG
+        end // if iValidRead and oEnable
+        else begin
+          if (can_read) begin
 
-                    ~GPU_VALID_TAG: begin
-                      // TODO: Implement when GPU isn't enabled
-                    end // case ~GPU_VALID_TAG
+            case(rRefreshState)
 
-                    default: begin
-                      // TODO: SENT ERROR
-                    end // case default
+              REFRESH_INIT_GPU: begin
 
-                  endcase // ioData
-                end // case RFRSH_INT_GPU_VALID_TAG
+                case (rRfrshInitGpuSubState)
+                  RFRSH_INT_GPU_VALID_TAG: begin
 
-                RFRSH_INT_GPU_NUM_OBJ: begin
-                  rNumObjts <= ioData;
-                  oAddress <= oAddress + 1;
-                  oWrite <= 1'b0;
-                  oValidRequest <= 1'b1;
-                  rRfrshInitGpuSubState <= RFRSH_INT_GPU_VALID_TAG;
-                  rRefreshState <= REFRESH_INIT_CAM;
-                end // case RFRSH_INT_GPU_NUM_OBJ
+                    case (DataBU)
+                      GPU_VALID_TAG: begin
+                        rRfrshInitGpuSubState <= RFRSH_INT_GPU_NUM_OBJ;
+                        oAddress <= oAddress + 1;
+                        oWrite <= 1'b0;
+                        oValidRequest <= 1'b1;
 
-                default: begin
-                  // TODO: SENT ERROR
-                end // case default
+                      end // case GPU_VALID_TAG
 
-              endcase // rRfrshInitGpuSubState
+                      ~GPU_VALID_TAG: begin
+                        // TODO: Implement when GPU isn't enabled
+                      end // case ~GPU_VALID_TAG
 
-            end // case REFRESH_INIT_GPU
+                      default: begin
 
-            REFRESH_INIT_CAM: begin
-              if (ioData == CAM_VALID_TAG) begin
-                oAddress <= oAddress + 1;
-                oWrite <= 1'b0;
-                oValidRequest <= 1'b1;
-                rRefreshState <= REFRESH_CAM_VER_X;
-              end else begin
-                // TODO: SENT ERROR
-              end
-            end // case REFRESH_INIT_CAM
-
-            REFRESH_CAM_VER_X: begin
-              oCamVerX <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_CAM_VER_Y;
-            end // case REFRESH_CAM_VER_X
-
-            REFRESH_CAM_VER_Y: begin
-              oCamVerY <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_CAM_VER_Z;
-            end // case REFRESH_CAM_VER_Y
-
-            REFRESH_CAM_VER_Z: begin
-              oCamVerZ <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_CAM_DC;
-            end // case REFRESH_CAM_VER_Z
-
-            REFRESH_CAM_DC: begin
-              oCamDc <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_INIT_OBJ;
-            end // case REFRESH_CAM_DC
-
-            REFRESH_INIT_OBJ: begin
-              case (rRfrshObjSubState)
-                RFRSH_OBJ_VALID_TAG: begin
-                  case (ioData)
-                    OBJ_VALID_TAG: begin
-                      oAddress <= oAddress + 1;
-                      oWrite <= 1'b0;
-                      oValidRequest <= 1'b1;
-                      rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
-                    end // case OBJ_VALID_TAG
-
-                    ~OBJ_VALID_TAG: begin
-                      rInvalidObj <= 1'b1;
-                      oAddress <= oAddress + 1;
-                      oWrite <= 1'b0;
-                      oValidRequest <= 1'b1;
-                      rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
-                    end // case ~OBJ_VALID_TAG
-
-                    FINAL_BLOCK_VALID_TAG: begin
-                      oEnable <= 1'b0;
-                      rGlbState <= GLB_WAIT_UART;
-                      iTx16Bits <= ~(REFRESH_VALID_TAG);
+                      iTx16Bits <= DataBU; // DataBU;
                       iTx16BitsReady <= 1'b1;
-                    end // case FINAL_BLOCK_VALID_TAG
+/*
+                        oAddress <= oAddress + 1;
+                        oWrite <= 1'b0;
+                        oValidRequest <= 1'b1;                        */
+                        // TODO: SENT ERROR
+                      end // case default
 
-                    default: begin
-                      // TODO: SENT ERROR
-                    end
+                    endcase // DataBU
+                  end // case RFRSH_INT_GPU_VALID_TAG
 
-                  endcase // ioData
-                end // case RFRSH_OBJ_VALID_TAG
-
-                RFRSH_OBJ_NEXT_ADDR: begin
-                  if (rInvalidObj) begin
-                    oAddress <= ioData;
-                    oWrite <= 1'b0;
-                    oValidRequest <= 1'b1;
-                    rRfrshObjSubState <= RFRSH_OBJ_VALID_TAG;
-                    rInvalidObj <= 1'b0;
-                  end else begin
-                    rNextObjAddr <= ioData;
+                  RFRSH_INT_GPU_NUM_OBJ: begin
+                    rNumObjts <= DataBU;
                     oAddress <= oAddress + 1;
                     oWrite <= 1'b0;
                     oValidRequest <= 1'b1;
-                    rRfrshObjSubState <= RFRSH_OBJ_VALID_TAG;
-                    rRefreshState <= REFRESH_COS_ROLL;
-                  end
-                end // case RFRSH_OBJ_NEXT_ADDR
+                    rRfrshInitGpuSubState <= RFRSH_INT_GPU_VALID_TAG;
+                    rRefreshState <= REFRESH_INIT_CAM;
+                  end // case RFRSH_INT_GPU_NUM_OBJ
 
-                default: begin
+                  default: begin
+                    // TODO: SENT ERROR
+                  end // case default
+
+                endcase // rRfrshInitGpuSubState
+
+              end // case REFRESH_INIT_GPU
+
+              REFRESH_INIT_CAM: begin
+                if (DataBU == CAM_VALID_TAG) begin
+                  oAddress <= oAddress + 1;
+                  oWrite <= 1'b0;
+                  oValidRequest <= 1'b1;
+                  rRefreshState <= REFRESH_CAM_VER_X;
+                end else begin
                   // TODO: SENT ERROR
-                end // case default
+                end
+              end // case REFRESH_INIT_CAM
 
-              endcase // rRfrshObjSubState
-
-              rFirstVTX <= 1'b1;
-              oInitObj <= 1'b0;
-              oInitVtx <= 1'b0;
-
-            end // case REFRESH_INIT_OBJ
-
-            REFRESH_COS_ROLL: begin
-              oCosRoll <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_COS_PITCH;
-            end // case REFRESH_COS_ROLL
-
-            REFRESH_COS_PITCH: begin
-              oCosPitch <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_COS_YAW;
-            end // case REFRESH_COS_PITCH
-
-            REFRESH_COS_YAW: begin
-              oCosYaw <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_SEN_ROLL;
-            end // case REFRESH_COS_YAW
-
-            REFRESH_SEN_ROLL: begin
-              oSenRoll <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_SEN_PITCH;
-            end // case REFRESH_SEN_ROLL
-
-            REFRESH_SEN_PITCH: begin
-              oSenPitch <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_SEN_YAW;
-            end // case REFRESH_SEN_PITCH
-
-            REFRESH_SEN_YAW: begin
-              oSenYaw <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_SCALE_X;
-            end // case REFRESH_SEN_YAW
-
-            REFRESH_SCALE_X: begin
-              oScaleX <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_SCALE_Y;
-            end // case REFRESH_SCALE_X
-
-            REFRESH_SCALE_Y: begin
-              oScaleY <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_SCALE_Z;
-            end // case REFRESH_SCALE_Y
-
-            REFRESH_SCALE_Z: begin
-              oScaleZ <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_TRANSL_X;
-            end // case REFRESH_SCALE_Z
-
-            REFRESH_TRANSL_X: begin
-              oTranslX <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_TRANSL_Y;
-            end // case REFRESH_TRANSL_X
-
-            REFRESH_TRANSL_Y: begin
-              oTranslY <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_TRANSL_Z;
-            end // case REFRESH_TRANSL_Y
-
-            REFRESH_TRANSL_Z: begin
-              oTranslZ <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_INIT_VTX;
-            end // case REFRESH_TRANSL_Z
-
-            REFRESH_INIT_VTX: begin
-              if (ioData == VRTX_VALID_TAG) begin
+              REFRESH_CAM_VER_X: begin
+                oCamVerX <= DataBU;
                 oAddress <= oAddress + 1;
                 oWrite <= 1'b0;
                 oValidRequest <= 1'b1;
-                rRefreshState <= REFRESH_VERTEX_X;
-              end else begin
-                // TODO: SENT ERROR
-              end
-            end // case REFRESH_INIT_VTX
+                rRefreshState <= REFRESH_CAM_VER_Y;
+              end // case REFRESH_CAM_VER_X
 
-            REFRESH_VERTEX_X: begin
-              oInitObj <= 1'b0;
-              oInitVtx <= 1'b0;
-              oVertexX <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_VERTEX_Y;
-            end // case REFRESH_VERTEX_X
+              REFRESH_CAM_VER_Y: begin
+                oCamVerY <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_CAM_VER_Z;
+              end // case REFRESH_CAM_VER_Y
 
-            REFRESH_VERTEX_Y: begin
-              oVertexY <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              rRefreshState <= REFRESH_VERTEX_Z;
-            end // case REFRESH_VERTEX_Y
+              REFRESH_CAM_VER_Z: begin
+                oCamVerZ <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_CAM_DC;
+              end // case REFRESH_CAM_VER_Z
 
-            REFRESH_VERTEX_Z: begin
-              if (oAddress == wLastObjAddr) begin
+              REFRESH_CAM_DC: begin
+                oCamDc <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
                 rRefreshState <= REFRESH_INIT_OBJ;
-              end else begin
-                rRefreshState <= REFRESH_VERTEX_X;
-              end
+              end // case REFRESH_CAM_DC
 
-              if (rFirstVTX == 1'b1) begin
-                oInitObj <= 1'b1;
-                rFirstVTX <= 1'b0;
-              end
+              REFRESH_INIT_OBJ: begin
+                case (rRfrshObjSubState)
+                  RFRSH_OBJ_VALID_TAG: begin
+                    case (DataBU)
+                      OBJ_VALID_TAG: begin
+                        oAddress <= oAddress + 1;
+                        oWrite <= 1'b0;
+                        oValidRequest <= 1'b1;
+                        rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
+                      end // case OBJ_VALID_TAG
 
-              oVertexZ <= ioData;
-              oAddress <= oAddress + 1;
-              oWrite <= 1'b0;
-              oValidRequest <= 1'b1;
-              oInitVtx <= 1'b1;
-            end // case REFRESH_VERTEX_Z
+                      ~OBJ_VALID_TAG: begin
+                        rInvalidObj <= 1'b1;
+                        oAddress <= oAddress + 1;
+                        oWrite <= 1'b0;
+                        oValidRequest <= 1'b1;
+                        rRfrshObjSubState <= RFRSH_OBJ_NEXT_ADDR;
+                      end // case ~OBJ_VALID_TAG
 
-            default: begin
-              // TODO: SENT ERROR
-            end // case default
+                      FINAL_BLOCK_VALID_TAG: begin
+                        oEnable <= 1'b0;
+                        rGlbState <= GLB_WAIT_UART;
+                        iTx16Bits <= ~(REFRESH_VALID_TAG);
+                        iTx16BitsReady <= 1'b1;
+                      end // case FINAL_BLOCK_VALID_TAG
 
-          endcase // rRefreshState
-        end // if iValidRead and oEnable
-        else begin
-          oInitObj <= 1'b0;
-          oInitVtx <= 1'b0;
-          oValidRequest <= 1'b0;
+                      default: begin
+                        // TODO: SENT ERROR
+                      end
+
+                    endcase // DataBU
+                  end // case RFRSH_OBJ_VALID_TAG
+
+                  RFRSH_OBJ_NEXT_ADDR: begin
+                    if (rInvalidObj) begin
+                      oAddress <= DataBU;
+                      oWrite <= 1'b0;
+                      oValidRequest <= 1'b1;
+                      rRfrshObjSubState <= RFRSH_OBJ_VALID_TAG;
+                      rInvalidObj <= 1'b0;
+                    end else begin
+                      rNextObjAddr <= DataBU;
+                      oAddress <= oAddress + 1;
+                      oWrite <= 1'b0;
+                      oValidRequest <= 1'b1;
+                      rRfrshObjSubState <= RFRSH_OBJ_VALID_TAG;
+                      rRefreshState <= REFRESH_COS_ROLL;
+                    end
+                  end // case RFRSH_OBJ_NEXT_ADDR
+
+                  default: begin
+                    // TODO: SENT ERROR
+                  end // case default
+
+                endcase // rRfrshObjSubState
+
+                rFirstVTX <= 1'b1;
+                oInitObj <= 1'b0;
+                oInitVtx <= 1'b0;
+
+              end // case REFRESH_INIT_OBJ
+
+              REFRESH_COS_ROLL: begin
+                oCosRoll <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_COS_PITCH;
+              end // case REFRESH_COS_ROLL
+
+              REFRESH_COS_PITCH: begin
+                oCosPitch <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_COS_YAW;
+              end // case REFRESH_COS_PITCH
+
+              REFRESH_COS_YAW: begin
+                oCosYaw <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_SEN_ROLL;
+              end // case REFRESH_COS_YAW
+
+              REFRESH_SEN_ROLL: begin
+                oSenRoll <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_SEN_PITCH;
+              end // case REFRESH_SEN_ROLL
+
+              REFRESH_SEN_PITCH: begin
+                oSenPitch <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_SEN_YAW;
+              end // case REFRESH_SEN_PITCH
+
+              REFRESH_SEN_YAW: begin
+                oSenYaw <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_SCALE_X;
+              end // case REFRESH_SEN_YAW
+
+              REFRESH_SCALE_X: begin
+                oScaleX <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_SCALE_Y;
+              end // case REFRESH_SCALE_X
+
+              REFRESH_SCALE_Y: begin
+                oScaleY <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_SCALE_Z;
+              end // case REFRESH_SCALE_Y
+
+              REFRESH_SCALE_Z: begin
+                oScaleZ <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_TRANSL_X;
+              end // case REFRESH_SCALE_Z
+
+              REFRESH_TRANSL_X: begin
+                oTranslX <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_TRANSL_Y;
+              end // case REFRESH_TRANSL_X
+
+              REFRESH_TRANSL_Y: begin
+                oTranslY <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_TRANSL_Z;
+              end // case REFRESH_TRANSL_Y
+
+              REFRESH_TRANSL_Z: begin
+                oTranslZ <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_INIT_VTX;
+              end // case REFRESH_TRANSL_Z
+
+              REFRESH_INIT_VTX: begin
+                if (DataBU == VRTX_VALID_TAG) begin
+                  oAddress <= oAddress + 1;
+                  oWrite <= 1'b0;
+                  oValidRequest <= 1'b1;
+                  rRefreshState <= REFRESH_VERTEX_X;
+                end else begin
+                  // TODO: SENT ERROR
+                end
+              end // case REFRESH_INIT_VTX
+
+              REFRESH_VERTEX_X: begin
+                oInitObj <= 1'b0;
+                oInitVtx <= 1'b0;
+                oVertexX <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_VERTEX_Y;
+              end // case REFRESH_VERTEX_X
+
+              REFRESH_VERTEX_Y: begin
+                oVertexY <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                rRefreshState <= REFRESH_VERTEX_Z;
+              end // case REFRESH_VERTEX_Y
+
+              REFRESH_VERTEX_Z: begin
+                if (oAddress == wLastObjAddr) begin
+                  rRefreshState <= REFRESH_INIT_OBJ;
+                end else begin
+                  rRefreshState <= REFRESH_VERTEX_X;
+                end
+
+                if (rFirstVTX == 1'b1) begin
+                  oInitObj <= 1'b1;
+                  rFirstVTX <= 1'b0;
+                end
+
+                oVertexZ <= DataBU;
+                oAddress <= oAddress + 1;
+                oWrite <= 1'b0;
+                oValidRequest <= 1'b1;
+                oInitVtx <= 1'b1;
+              end // case REFRESH_VERTEX_Z
+
+              default: begin
+                // TODO: SENT ERROR
+              end // case default
+
+            endcase // rRefreshState
+
+            can_read <= 1'b0;
+
+          end // if can_read
+          else begin
+            oInitObj <= 1'b0;
+            oInitVtx <= 1'b0;
+            oValidRequest <= 1'b0;
+            iTx16BitsReady <= 1'b0;
+
+          end // else can_read
         end // else iValidRead and oEnable
       end // else rSubStateChg
     end // else iRx16BitsReady

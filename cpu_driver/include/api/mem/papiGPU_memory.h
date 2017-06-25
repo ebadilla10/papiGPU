@@ -12,8 +12,9 @@
  #define SRAM_ENTRY_BYTE_SIZE   2
  /**  */
 #endif
-#ifndef SRAM_TAG_BYTE_SIZE
- #define SRAM_TAG_BYTE_SIZE     2
+
+#ifndef TAG_BYTE_SIZE
+ #define TAG_BYTE_SIZE     2
  /**  */
 #endif
 
@@ -22,7 +23,7 @@
   /**  */
 #endif
 #ifndef NUMB_OBJS_ADDRESS
-  #define NUMB_OBJS_ADDRESS  INITIAL_ADDRESS + 1
+  #define NUMB_OBJS_ADDRESS  (INITIAL_ADDRESS + 1)
   /**  */
 #endif
 #ifndef INITIAL_BLOCK_SIZE
@@ -31,7 +32,7 @@
 #endif
 
 #ifndef CAM_ADDRESS
-  #define CAM_ADDRESS    INITIAL_ADDRESS + INITIAL_BLOCK_SIZE
+  #define CAM_ADDRESS    (INITIAL_ADDRESS + INITIAL_BLOCK_SIZE)
   /**  */
 #endif
 #ifndef CAM_BLOCK_SIZE
@@ -40,7 +41,7 @@
 #endif
 
 #ifndef INIT_OBJS_ADDRESS
-  #define INIT_OBJS_ADDRESS CAM_ADDRESS + CAM_BLOCK_SIZE
+  #define INIT_OBJS_ADDRESS (CAM_ADDRESS + CAM_BLOCK_SIZE)
   /**  */
 #endif
 
@@ -53,7 +54,7 @@
   /**  */
 #endif
 #ifndef TO_INIT_VERTEX_BLOCK_SIZE
-  #define TO_INIT_VERTEX_BLOCK_SIZE OBJ_SET_BLOCK_SIZE + TMATRIX_BLOCK_SIZE
+  #define TO_INIT_VERTEX_BLOCK_SIZE (OBJ_SET_BLOCK_SIZE + TMATRIX_BLOCK_SIZE)
   /**  */
 #endif
 

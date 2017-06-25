@@ -1379,7 +1379,7 @@ end
 //////////////////////////////////////
 // Low iValidRead after 2 clock cycles
 always @ ( posedge iValidRead ) begin
-  #(PERIOD - 2)
+  #(PERIOD)
   iValidRead = 1'b0;
 end
 
