@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "./mem_ctrl/mem_ctrl.v"
-`include "./sram/sram.v"
+`include "./sram/sram_syn.v"
 `include "./uart/uart.v"
 
 module mem_mgr (
@@ -61,7 +61,8 @@ module mem_mgr (
   wire wRxReady, wRxError, wTxSent, wTxReady;
 
   // Wires between SRAM-MEM_CTRL
-  wire [15:0] wData;
+  wire [15:0] wData1;
+  wire [15:0] wData2;
   wire wValidRead, wValidRequest, wWrite;
   wire [21:0] wAddress;
 
@@ -140,7 +141,8 @@ module mem_mgr (
     .oVertexY(wVertexY),
     .oVertexZ(wVertexZ),
 
-    .ioData(wData),
+    .oData(wData1),
+    .iData(wData2),
     .iValidRead(wValidRead),
     .oAddress(wAddress),
     .oValidRequest(wValidRequest),
@@ -163,7 +165,8 @@ module mem_mgr (
 
     //Inputs and outputs to controller from using module
     .iAddress(wAddress),
-    .ioData(wData),
+    .iData(wData1),
+    .oData(wData2),
     .iValidRequest(wValidRequest),
     .iWrite(wWrite),
     .oValidRead(wValidRead),

@@ -30,7 +30,8 @@ module mem_ctrl(
   output reg [15:0] oVertexZ,
 
   // Inputs from SRAM
-  inout [15:0] ioData,
+  input [15:0] iData,
+  output reg [15:0] oData,
   input wire   iValidRead, // ACK
   // Outputs to SRAM
   output reg [21:0] oAddress,
@@ -169,7 +170,6 @@ reg [15:0] rActualAddr = 16'h0000;
 reg [15:0] rStopAddr   = 16'h0000;
 reg [15:0] rOffsetAddr = 16'h0000;
 
-reg [15:0] rData           = 16'h0000;
 reg [15:0] rRespFinalState = 16'h0000;
 reg        rOffsetVertex   = 1'b0;
 reg        rFinalExcep     = 1'b0;
@@ -177,8 +177,6 @@ reg        rFinalExcep     = 1'b0;
 // For waiting 1 clock cycle from SRAM ready to next request
 reg can_read = 1'b0;
 reg [15:0] DataBU = 16'h0000;
-
-assign ioData = (!oWrite) ? 16'bz : rData;
 
 always @ ( posedge iClock ) begin
   if (iRxReady) begin
@@ -256,7 +254,6 @@ always @ (posedge iClock) begin
     rActualAddr <= 16'h0000;
     rStopAddr   <= 16'h0000;
     rOffsetAddr <= 16'h0000;
-    rData           <= 16'h0000;
     rRespFinalState <= 16'h0000;
     rOffsetVertex   <= 1'b0;
     rFinalExcep     <= 1'b0;
@@ -375,7 +372,7 @@ always @ (posedge iClock) begin
               if (iRx16Bits == FINAL_BLOCK_VALID_TAG) begin
 
                 if (!rFinalExcep) begin
-                  rData <= iRx16Bits;
+                  oData <= iRx16Bits;
                   oAddress <= rStopAddr;
                   oWrite <= 1'b1;
                   oValidRequest <= 1'b1;
@@ -393,7 +390,7 @@ always @ (posedge iClock) begin
               end
 
             end else begin
-              rData <= iRx16Bits;
+              oData <= iRx16Bits;
               oAddress <= rActualAddr;
               oWrite <= 1'b1;
               oValidRequest <= 1'b1;
@@ -411,10 +408,13 @@ always @ (posedge iClock) begin
         rSubStateChg <= 1'b0;
       end // if rSubStateChg
       else begin
-        iTx16BitsReady <= 1'b0;
         if (iValidRead && oEnable) begin
-          DataBU = ioData;
-          can_read = 1'b1;
+          DataBU <= iData;
+          can_read <= 1'b1;
+          oValidRequest <= 1'b0;
+
+          LED_debug <= 1'b0; // DEBUG
+
         end // if iValidRead and oEnable
         else begin
           if (can_read) begin
@@ -433,8 +433,6 @@ always @ (posedge iClock) begin
                         oWrite <= 1'b0;
                         oValidRequest <= 1'b1;
 
-                        LED_debug = 1'b0; // DEBUG
-
                       end // case GPU_VALID_TAG
 
                       ~GPU_VALID_TAG: begin
@@ -443,9 +441,12 @@ always @ (posedge iClock) begin
 
                       default: begin
 
+                      iTx16Bits <= DataBU; // DataBU;
+                      iTx16BitsReady <= 1'b1;
+/*
                         oAddress <= oAddress + 1;
                         oWrite <= 1'b0;
-                        oValidRequest <= 1'b1;
+                        oValidRequest <= 1'b1;                        */
                         // TODO: SENT ERROR
                       end // case default
 
@@ -724,13 +725,14 @@ always @ (posedge iClock) begin
 
             endcase // rRefreshState
 
-            can_read = 1'b0;
+            can_read <= 1'b0;
 
           end // if can_read
           else begin
             oInitObj <= 1'b0;
             oInitVtx <= 1'b0;
             oValidRequest <= 1'b0;
+            iTx16BitsReady <= 1'b0;
 
           end // else can_read
         end // else iValidRead and oEnable
