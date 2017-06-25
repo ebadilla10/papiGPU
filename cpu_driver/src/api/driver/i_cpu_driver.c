@@ -209,7 +209,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[0],
+  memcpy(&str_to_send[0],
           str_converted,
           sizeof(uint16_t));
 
@@ -223,7 +223,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -239,7 +239,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -255,7 +255,7 @@ int i_papiGPU_initialize(gpu_portname         portname[],
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -421,11 +421,11 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[0],
+  memcpy(&str_to_send[0],
           str_converted,
           sizeof(uint16_t));
 
-  SRAM_entry = GPU_VALID_TAG;
+  SRAM_entry = CAM_VALID_TAG;
   status = u_half_prec_to_string(SRAM_entry, str_converted);
   if (status){
     #ifdef DEBUGLOG
@@ -435,7 +435,7 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -451,7 +451,7 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -465,7 +465,7 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -479,7 +479,7 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -493,7 +493,7 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -509,7 +509,7 @@ int i_papiGPU_create_camera(struct papiGPU_vertex  cam_vertex,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -679,7 +679,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[0],
+  memcpy(&str_to_send[0],
           str_converted,
           sizeof(uint16_t));
 
@@ -694,7 +694,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -709,7 +709,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -726,7 +726,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -742,7 +742,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -758,7 +758,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -774,7 +774,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -790,7 +790,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -806,7 +806,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -822,7 +822,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -838,7 +838,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -854,7 +854,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -870,7 +870,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -886,7 +886,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -902,7 +902,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -918,7 +918,7 @@ int i_papiGPU_create_object(bool                          enable,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -1002,7 +1002,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
   int vtx_address = 0;
 
   // Set the address to next object
-  next_object_address += TO_INIT_VERTEX_BLOCK_SIZE + (3 * num_vtx);
+  next_object_address += TO_INIT_VERTEX_BLOCK_SIZE + (3 * num_vtx) + 1;
 
   str_converted = (char *) malloc(sizeof(uint16_t));
   str_to_send = (char *) malloc(sizeof(uint16_t));
@@ -1095,7 +1095,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[0],
+  memcpy(&str_to_send[0],
           str_converted,
           sizeof(uint16_t));
 
@@ -1109,7 +1109,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -1124,7 +1124,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -1143,7 +1143,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
       *state = GPU_ERROR;
       return status;
     }
-    strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+    memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
             str_converted,
             sizeof(uint16_t));
 
@@ -1159,7 +1159,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
       *state = GPU_ERROR;
       return status;
     }
-    strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+    memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
             str_converted,
             sizeof(uint16_t));
 
@@ -1175,7 +1175,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
       *state = GPU_ERROR;
       return status;
     }
-    strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+    memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
             str_converted,
             sizeof(uint16_t));
 
@@ -1193,7 +1193,7 @@ int i_papiGPU_insert_vertices(gpu_object_id          object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -1357,7 +1357,7 @@ int i_papiGPU_close_object(gpu_object_id        object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[0],
+  memcpy(&str_to_send[0],
           str_converted,
           sizeof(uint16_t));
 
@@ -1371,7 +1371,7 @@ int i_papiGPU_close_object(gpu_object_id        object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -1387,7 +1387,7 @@ int i_papiGPU_close_object(gpu_object_id        object_id,
     *state = GPU_ERROR;
     return status;
   }
-  strncpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
+  memcpy(&str_to_send[SRAM_ADDRESS_BYTE_SIZE + (block_element * SRAM_ENTRY_BYTE_SIZE)],
           str_converted,
           sizeof(uint16_t));
 
@@ -1503,7 +1503,7 @@ int i_papiGPU_refresh(enum papiGPU_states *state)
   }
 
   // Waiting for papiGPU refresh approval
-  mem_valid_tag = (uint16_t) (REFRESH_VALID_TAG);
+  mem_valid_tag = (uint16_t) ~(REFRESH_VALID_TAG);
   status = u_half_prec_to_string(mem_valid_tag, str_to_compare);
   if (status){
     #ifdef DEBUGLOG

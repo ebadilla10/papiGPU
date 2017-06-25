@@ -68,10 +68,6 @@ int u_uart_receiver(int filestream, void *data, int bytesize)
     } else if (0 < receiver_status){
       #ifdef DEBUGLOG
         fprintf (stderr, "\tRECEIVED data via UART\n");
-
-        uint8_t *uart;
-        uart = (uint8_t*) data;
-        printf("Data for UART %d %d\n", uart[0], uart[1]);
       #endif
       return status;
     }
