@@ -2,6 +2,7 @@
 
 `include "./pipeline/graphics_pipeline/graphics_pipeline.v"
 `include "./mem_mgr/mem_mgr.v"
+`include "./vga/vga.v"
 
 module papiGPU (
   input iClock,
@@ -29,9 +30,14 @@ module papiGPU (
   output reg oRegToPinREAD, // TO VERIFY SRAM
 	output reg oRegToPinWRITE, // TO VERIFY SRAM
 
-  output reg LED_debug
+  output reg LED_debug,
 
-  // TODO: Outputs to VGA
+  // Outputs VGA
+  output reg [2:0] oVGARed,
+  output reg [2:0] oVGAGreen,
+  output reg [1:0] oVGABlue,
+  output reg 	     oVGAHorizontalSync,
+  output reg 	     oVGAVerticalSync
 );
 
   // Wires to SRAM Device
@@ -84,6 +90,13 @@ module papiGPU (
 	wire wRegToPinWRITE; // TO VERIFY
 
   wire wLED_debug;
+
+  // Outputs VGA
+  wire [2:0] wVGARed;
+  wire [2:0] wVGAGreen;
+  wire [1:0] wVGABlue;
+  wire 	     wVGAHorizontalSync;
+  wire 	     wVGAVerticalSync;
 
   ///////////////////
   // INSTANCE MODULES
@@ -167,6 +180,25 @@ module papiGPU (
     .i_VertexZ(wVertexZ)
   );
 
+  vga vga_inst (
+    // Input general
+    .iClock(clock_in),
+    .iReset(iReset),
+
+    // Input from Memory Manager
+    .iEnable(wEnable),
+    .iVertex(wInitVtx),
+    .i_ieee754X(w_X),
+    .i_ieee754Y(w_Y),
+
+    // Outputs
+    .oVGARed(wVGARed),
+    .oVGAGreen(wVGAGreen),
+    .oVGABlue(wVGABlue),
+    .oVGAHorizontalSync(wVGAHorizontalSync),
+    .oVGAVerticalSync(wVGAVerticalSync)
+    );
+
   always @ ( * ) begin
     oClockEn = wClockEn;
     oCSN = wCSN;
@@ -184,6 +216,13 @@ module papiGPU (
   	oRegToPinWRITE = wRegToPinWRITE; // TO VERIFY SRAM
 
     LED_debug = wLED_debug;
+
+    // Outputs VGA
+    oVGARed = wVGARed;
+    oVGAGreen = wVGAGreen;
+    oVGABlue = wVGABlue;
+    oVGAHorizontalSync = wVGAHorizontalSync;
+    oVGAVerticalSync = wVGAVerticalSync;
   end
 
 endmodule // papiGPU
