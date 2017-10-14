@@ -23,11 +23,11 @@ wire 		wire5, wire10, wire11, wire12, wire13, wire14;
 wire exception;
 
 //Assigns
-assign twenty754[15:0] 	= 	16'b0100011000000000; // NOW IS 6
-assign _twenty754[15:0]	= 	16'b1100011000000000; // NOW IS -6
+assign twenty754[15:0] 	= 	16'b0100011001100110; // NOW IS 6.4
+assign _twenty754[15:0]	= 	16'b1100011001100110; // NOW IS -6.4
 assign two754[15:0]		=	16'b0100000000000000;
-assign H[15:0]			=	16'b0101011110000000; //400 // NOW IS 120
-assign W[15:0]			=	16'b0101011110000000; //400 // NOW IS 120
+assign H[15:0]			=	16'b0101100000000000; //400 // NOW IS 128
+assign W[15:0]			=	16'b0101100000000000; //400 // NOW IS 128
 assign exception = wire11 || wire12 || wire13 || wire14;
 
 

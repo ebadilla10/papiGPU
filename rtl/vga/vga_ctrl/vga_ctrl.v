@@ -21,9 +21,9 @@ module vga_ctrl # (
    wire wOpen;
  	 assign wOpen = 1'bz;
 
-   assign oVGAHorizontalSync = (hCount >= 656 && hCount <= 752)? 1'b0 : 1'b1;
-   assign oVGAVerticalSync = (vCount >= 490 && vCount <= 492)? 1'b0 : 1'b1;
-   assign oDisplay = (hCount <= 119 && vCount <= 119)? 1'b1 : 1'b0;
+   assign oVGAHorizontalSync = (hCount >= 656 && hCount < 752)? 1'b0 : 1'b1;
+   assign oVGAVerticalSync = (vCount >= 490 && vCount < 492)? 1'b0 : 1'b1;
+   assign oDisplay = (hCount < 120 && vCount < 120)? 1'b1 : 1'b0;
 
    assign oVideoMemCol 	= (oDisplay == 1'b1) ? hCount : 0;
    assign oVideoMemRow 	= (oDisplay == 1'b1) ? vCount : 0;
@@ -39,12 +39,12 @@ module vga_ctrl # (
 	 else
 	    begin
 	       if (hCount < 799)
-		  hCount <= hCount + 1;
+		       hCount <= hCount + 1;
 	       else
 		  begin
 		     hCount <= 0;
 		     if (vCount < 524)
-			vCount <= vCount + 1;
+			     vCount <= vCount + 1;
 		     else
 			vCount <= 0;
 		  end
